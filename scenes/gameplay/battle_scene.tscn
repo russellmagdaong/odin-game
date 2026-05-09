@@ -264,6 +264,7 @@ alignment = 2
 
 [node name="DefeatButton" type="Button" parent="MarginContainer/ContentSplit/RightVBox/EditorPanel/EditorMargin/EditorVBox/BottomRow" unique_id=1146315180]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 theme_override_styles/normal = ExtResource("5_drxpv")
 theme_override_styles/pressed = ExtResource("6_kr4hl")
