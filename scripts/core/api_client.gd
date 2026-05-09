@@ -10,6 +10,7 @@ extends Node
 signal submission_completed(data: Dictionary)
 signal session_created(data: Dictionary)
 signal request_failed(tag: String, http_code: int)
+signal puzzle_fetched(data: Dictionary)
 
 var base_url: String = ""
 
@@ -47,6 +48,9 @@ func post_session_start(payload: Dictionary) -> void:
 
 func patch_session_end(session_id: String) -> void:
 	_enqueue(HTTPClient.METHOD_PATCH, "/api/session/" + session_id + "/end", {}, "session_end")
+
+func get_puzzle(puzzle_id: String) -> void:
+	_enqueue(HTTPClient.METHOD_GET, "/api/puzzle/" + puzzle_id, {}, "puzzle_fetch")
 
 # ---------------------------------------------------------------------------
 # Internal queue
@@ -103,6 +107,8 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 			submission_completed.emit(data)
 		"session_start":
 			session_created.emit(data)
+		"puzzle_fetch":
+			puzzle_fetched.emit(data)
 
 	_flush()
 

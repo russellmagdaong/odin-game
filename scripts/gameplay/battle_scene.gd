@@ -46,7 +46,10 @@ func _ready() -> void:
 	ApiClient.submission_completed.connect(_on_submission_completed)
 	ApiClient.session_created.connect(_on_session_created)
 	ApiClient.request_failed.connect(_on_request_failed)
+	ApiClient.puzzle_fetched.connect(_on_puzzle_fetched)
 
+	if not _puzzle_id.is_empty():
+		ApiClient.get_puzzle(_puzzle_id)
 	_post_session_start()
 
 func _exit_tree() -> void:
@@ -56,6 +59,8 @@ func _exit_tree() -> void:
 		ApiClient.session_created.disconnect(_on_session_created)
 	if ApiClient.request_failed.is_connected(_on_request_failed):
 		ApiClient.request_failed.disconnect(_on_request_failed)
+	if ApiClient.puzzle_fetched.is_connected(_on_puzzle_fetched):
+		ApiClient.puzzle_fetched.disconnect(_on_puzzle_fetched)
 
 # ---------------------------------------------------------------------------
 # Keystroke capture
@@ -104,6 +109,15 @@ func _on_submit_pressed() -> void:
 # ---------------------------------------------------------------------------
 # Response handling
 # ---------------------------------------------------------------------------
+
+func _on_puzzle_fetched(data: Dictionary) -> void:
+	var desc: String = data.get("description", "")
+	var code: String = data.get("starterCode", "")
+	if not desc.is_empty():
+		set_problem_text(desc)
+	if not code.is_empty():
+		_code_editor.text = code
+		_code_editor.set_caret_line(_code_editor.get_line_count() - 1)
 
 func _on_session_created(data: Dictionary) -> void:
 	_session_id = str(data.get("id", ""))
@@ -157,6 +171,8 @@ func _on_request_failed(tag: String, code: int) -> void:
 			_output_text.text = "Could not reach the server. (HTTP %d)\nYour code was not evaluated." % code
 		"session_start":
 			_output_text.text = "Could not create session. (HTTP %d)\nSubmitting is disabled." % code
+		"puzzle_fetch":
+			set_problem_text("(Puzzle failed to load — puzzle_id: %s)" % _puzzle_id)
 
 # ---------------------------------------------------------------------------
 # Session management
@@ -184,6 +200,8 @@ func _finish_session(_completed: bool) -> void:
 		ApiClient.session_created.disconnect(_on_session_created)
 	if ApiClient.request_failed.is_connected(_on_request_failed):
 		ApiClient.request_failed.disconnect(_on_request_failed)
+	if ApiClient.puzzle_fetched.is_connected(_on_puzzle_fetched):
+		ApiClient.puzzle_fetched.disconnect(_on_puzzle_fetched)
 
 	if not _session_id.is_empty():
 		ApiClient.patch_session_end(_session_id)
