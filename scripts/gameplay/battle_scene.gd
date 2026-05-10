@@ -6,6 +6,11 @@ var _submit_btn: Button
 
 const PLAYER_SPRITE_HEIGHT = 150.0
 const ENEMY_SPRITE_HEIGHT = 200.0
+const CODE_FONT_SIZE_DEFAULT: int = 14
+const CODE_FONT_SIZE_MIN: int = 6
+const CODE_FONT_SIZE_MAX: int = 32
+
+var _code_font_size: int = CODE_FONT_SIZE_DEFAULT
 
 # Session state
 var _session_id: String = ""
@@ -25,6 +30,7 @@ func _ready() -> void:
 	_code_editor = get_node("%CodeEditor")
 	_output_text  = get_node("%OutputText")
 	_submit_btn   = get_node("%SubmitButton")
+	_code_editor.add_theme_font_size_override("font_size", _code_font_size)
 
 	# Disabled until the server confirms the session was created.
 	_submit_btn.disabled = true
@@ -43,7 +49,6 @@ func _ready() -> void:
 	_metrics.start()
 
 	_code_editor.gui_input.connect(_on_code_editor_input)
-	_code_editor.text_changed.connect(_adjust_code_font_size)
 	ApiClient.submission_completed.connect(_on_submission_completed)
 	ApiClient.session_created.connect(_on_session_created)
 	ApiClient.request_failed.connect(_on_request_failed)
@@ -68,15 +73,44 @@ func _exit_tree() -> void:
 # ---------------------------------------------------------------------------
 
 func _on_code_editor_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.ctrl_pressed and event.pressed:
+		match event.button_index:
+			MOUSE_BUTTON_WHEEL_UP:
+				_set_code_font_size(_code_font_size + 2)
+				get_viewport().set_input_as_handled()
+				return
+			MOUSE_BUTTON_WHEEL_DOWN:
+				_set_code_font_size(_code_font_size - 2)
+				get_viewport().set_input_as_handled()
+				return
+
 	if not event is InputEventKey:
 		return
 	var key := event as InputEventKey
 	if key.echo:
 		return
+	if key.pressed and key.ctrl_pressed:
+		match key.keycode:
+			KEY_EQUAL, KEY_KP_ADD:
+				_set_code_font_size(_code_font_size + 2)
+				get_viewport().set_input_as_handled()
+				return
+			KEY_MINUS, KEY_KP_SUBTRACT:
+				_set_code_font_size(_code_font_size - 2)
+				get_viewport().set_input_as_handled()
+				return
+			KEY_0, KEY_KP_0:
+				_set_code_font_size(CODE_FONT_SIZE_DEFAULT)
+				get_viewport().set_input_as_handled()
+				return
 	if key.pressed:
 		_metrics.record_key_down(key.physical_keycode)
 	else:
 		_metrics.record_key_up(key.physical_keycode)
+
+func _set_code_font_size(new_size: int) -> void:
+	_code_font_size = clampi(new_size, CODE_FONT_SIZE_MIN, CODE_FONT_SIZE_MAX)
+	_code_editor.add_theme_font_size_override("font_size", _code_font_size)
 
 # ---------------------------------------------------------------------------
 # Submit
@@ -120,7 +154,6 @@ func _on_puzzle_fetched(data: Dictionary) -> void:
 	if not code.is_empty():
 		_code_editor.text = code
 		_code_editor.set_caret_line(_code_editor.get_line_count() - 1)
-		call_deferred("_adjust_code_font_size")
 
 func _on_session_created(data: Dictionary) -> void:
 	_session_id = str(data.get("id", ""))
@@ -284,20 +317,6 @@ func _load_battle_texture(folder: String, texture_name: String) -> Texture2D:
 		return null
 	var path := "res://assets/battle/%s/%s.png" % [folder, texture_name]
 	return load(path) if ResourceLoader.exists(path) else null
-
-func _adjust_code_font_size() -> void:
-	var available: float = _code_editor.size.y
-	if available <= 0:
-		return
-	var font: Font = _code_editor.get_theme_font("font")
-	if font == null:
-		return
-	var line_count: int = _code_editor.get_line_count()
-	for f_size in range(14, 5, -1):
-		if line_count * (font.get_height(f_size) + 4.0) <= available:
-			_code_editor.add_theme_font_size_override("font_size", f_size)
-			return
-	_code_editor.add_theme_font_size_override("font_size", 6)
 
 func set_problem_text(text: String) -> void:
 	var label = get_node("%ProblemText")
