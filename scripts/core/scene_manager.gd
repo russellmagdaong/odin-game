@@ -237,6 +237,7 @@ func end_battle() -> void:
 		is_level_boss = enemy.get("is_level_boss") == true
 		if not enemy_id.is_empty() and not is_final:
 			Globals.defeated_enemies[enemy_id] = true
+			PlayerDataManager.mark_enemy_defeated(enemy_id)
 		if is_final:
 			Globals.final_boss_defeated = true
 
@@ -250,6 +251,10 @@ func end_battle() -> void:
 
 	await fade_in()
 	AudioManager.play_music_for_level(str(current_level.name) if current_level != null else "")
+
+	var player_node = GameManager.get_player()
+	if player_node != null and current_level != null:
+		PlayerDataManager.save_progress(str(current_level.name), player_node.global_position)
 
 	if is_final and is_instance_valid(enemy):
 		await _show_final_boss_ending(enemy, is_level_boss)

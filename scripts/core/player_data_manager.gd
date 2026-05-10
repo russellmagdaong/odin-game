@@ -41,6 +41,7 @@ var achievements: Array[String] = []
 var last_level_name: String = ""
 var last_position: Vector2 = Vector2.ZERO
 var triggered_dialogues: Array[String] = []
+var defeated_enemies: Array[String] = []
 
 # Intentionally NOT called on startup (debug mode).
 # Reads local JSON; swap for an HTTP call when server is ready.
@@ -76,6 +77,12 @@ func load_data() -> void:
 		triggered_dialogues.append(str(t))
 		Globals.triggered_dialogues[str(t)] = true
 
+	defeated_enemies = []
+	Globals.defeated_enemies.clear()
+	for e in data.get("defeated_enemies", []):
+		defeated_enemies.append(str(e))
+		Globals.defeated_enemies[str(e)] = true
+
 func save_character(character: String) -> void:
 	selected_character = character
 	has_played = true
@@ -89,6 +96,11 @@ func save_progress(level_name: String, position: Vector2 = Vector2.ZERO) -> void
 func mark_dialogue_triggered(trigger_id: String) -> void:
 	if not trigger_id in triggered_dialogues:
 		triggered_dialogues.append(trigger_id)
+	_write_to_file()
+
+func mark_enemy_defeated(enemy_id: String) -> void:
+	if not enemy_id in defeated_enemies:
+		defeated_enemies.append(enemy_id)
 	_write_to_file()
 
 func unlock_achievement(id: String) -> void:
@@ -124,6 +136,7 @@ func _write_to_file() -> void:
 		"last_position_x":     last_position.x,
 		"last_position_y":     last_position.y,
 		"triggered_dialogues": triggered_dialogues.duplicate(),
+		"defeated_enemies":    defeated_enemies.duplicate(),
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.ModeFlags.WRITE)
 	if file != null:
