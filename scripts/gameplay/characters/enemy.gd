@@ -19,6 +19,7 @@ var vision_direction: Vector2 = Vector2.DOWN
 @export_category("Dialogue")
 @export var battle_dialogue: Array[DialogueEntry] = []
 @export var defeat_dialogue: Array[DialogueEntry] = []
+@export var post_defeat_dialogue: Array[DialogueEntry] = []
 
 @export_category("Boss")
 @export var is_level_boss: bool = false

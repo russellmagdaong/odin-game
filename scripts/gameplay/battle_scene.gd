@@ -181,8 +181,9 @@ func _on_request_failed(tag: String, code: int) -> void:
 func _post_session_start() -> void:
 	var dungeon_level := 0
 	if SceneManager.current_level != null:
-		var idx := Enums.LevelName.keys().find(str(SceneManager.current_level.name))
-		dungeon_level = maxi(idx, 0)
+		var level_name := str(SceneManager.current_level.name)
+		if level_name.length() > 5:
+			dungeon_level = int(level_name[5])
 
 	ApiClient.post_session_start({
 		"userId":       PlayerDataManager.user_id,

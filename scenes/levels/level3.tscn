@@ -9,6 +9,12 @@
 [ext_resource type="Script" uid="uid://cb4nyolipk5xc" path="res://scripts/gameplay/data/dialogue_entry.gd" id="7_f7rt6"]
 [ext_resource type="PackedScene" uid="uid://dfbkn4r5vpnig" path="res://scenes/gameplay/interactable.tscn" id="8_8w0pe"]
 
+[sub_resource type="Resource" id="Resource_a82vw"]
+script = ExtResource("7_f7rt6")
+speaker_name = "ODIN"
+text = "Looks like their boss is upstairs. Let's defeat all these bugs first."
+metadata/_custom_type_script = "uid://cb4nyolipk5xc"
+
 [sub_resource type="Resource" id="Resource_8w0pe"]
 script = ExtResource("7_f7rt6")
 speaker_name = "The Matrix Carver"
@@ -51,6 +57,7 @@ metadata/_custom_type_script = "uid://cb4nyolipk5xc"
 
 [node name="Level" type="Node2D" unique_id=1566062915]
 script = ExtResource("1_f5jb5")
+spawn_dialogue = Array[ExtResource("7_f7rt6")]([SubResource("Resource_a82vw")])
 
 [node name="Tiles" type="Node2D" parent="." unique_id=545103342]
 texture_filter = 1
@@ -112,27 +119,37 @@ position = Vector2(848, 240)
 position = Vector2(-352, 112)
 enemy_id = "31"
 initial_facing = 2
+puzzle_id = "a0000031-0000-0000-0000-000000000000"
+skill_type = 4
 battle_dialogue = Array[ExtResource("7_f7rt6")]([SubResource("Resource_8w0pe")])
 
 [node name="Enemy2" parent="Enemies" unique_id=1561116201 instance=ExtResource("6_frjko")]
 position = Vector2(-320, 32)
 enemy_id = "32"
+puzzle_id = "a0000032-0000-0000-0000-000000000000"
+skill_type = 4
 battle_dialogue = Array[ExtResource("7_f7rt6")]([SubResource("Resource_7eb4w")])
 
 [node name="Enemy3" parent="Enemies" unique_id=1627595160 instance=ExtResource("6_frjko")]
 position = Vector2(-240, 80)
 enemy_id = "33"
+puzzle_id = "a0000033-0000-0000-0000-000000000000"
+skill_type = 4
 battle_dialogue = Array[ExtResource("7_f7rt6")]([SubResource("Resource_hadiw")])
 
 [node name="Enemy4" parent="Enemies" unique_id=1885909971 instance=ExtResource("6_frjko")]
 position = Vector2(-80, 64)
 enemy_id = "34"
+puzzle_id = "a0000034-0000-0000-0000-000000000000"
+skill_type = 4
 battle_dialogue = Array[ExtResource("7_f7rt6")]([SubResource("Resource_72x3h")])
 
 [node name="Enemy5" parent="Enemies" unique_id=7200559 instance=ExtResource("6_frjko")]
 position = Vector2(0, 160)
 enemy_id = "35"
 initial_facing = 1
+puzzle_id = "a0000035-0000-0000-0000-000000000000"
+skill_type = 4
 battle_dialogue = Array[ExtResource("7_f7rt6")]([SubResource("Resource_wb0vq")])
 is_level_boss = true
 

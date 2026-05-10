@@ -155,12 +155,14 @@ position = Vector2(608, 480)
 enemy_id = "01"
 initial_facing = 2
 vision_range = 9
+puzzle_id = "a0000001-0000-0000-0000-000000000000"
 battle_dialogue = Array[ExtResource("7_1nvli")]([SubResource("Resource_a76di")])
 
 [node name="Enemy2" parent="Enemies" unique_id=1936928019 instance=ExtResource("4_d0grl")]
 position = Vector2(416, 448)
 enemy_id = "02"
 initial_facing = 3
+puzzle_id = "a0000002-0000-0000-0000-000000000000"
 battle_dialogue = Array[ExtResource("7_1nvli")]([SubResource("Resource_oem7y")])
 
 [node name="Enemy3" parent="Enemies" unique_id=176152187 instance=ExtResource("4_d0grl")]
@@ -168,12 +170,16 @@ position = Vector2(352, 416)
 enemy_id = "03"
 initial_facing = 3
 vision_range = 9
+puzzle_id = "a0000003-0000-0000-0000-000000000000"
+skill_type = 3
 battle_dialogue = Array[ExtResource("7_1nvli")]([SubResource("Resource_fj52k")])
 
 [node name="Enemy4" parent="Enemies" unique_id=150686460 instance=ExtResource("4_d0grl")]
 position = Vector2(544, 384)
 enemy_id = "04"
 initial_facing = 2
+puzzle_id = "a0000004-0000-0000-0000-000000000000"
+skill_type = 1
 battle_dialogue = Array[ExtResource("7_1nvli")]([SubResource("Resource_1t5oo")])
 
 [node name="Enemy5" parent="Enemies" unique_id=173818671 instance=ExtResource("4_d0grl")]
@@ -181,6 +187,7 @@ position = Vector2(592, 352)
 enemy_id = "05"
 initial_facing = 3
 vision_range = 1
+puzzle_id = "a0000005-0000-0000-0000-000000000000"
 battle_dialogue = Array[ExtResource("7_1nvli")]([SubResource("Resource_m6lg1")])
 is_level_boss = true
 

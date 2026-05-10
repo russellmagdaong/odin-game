@@ -9,6 +9,11 @@
 [ext_resource type="Script" uid="uid://cb4nyolipk5xc" path="res://scripts/gameplay/data/dialogue_entry.gd" id="7_2r1tl"]
 [ext_resource type="PackedScene" uid="uid://dfbkn4r5vpnig" path="res://scenes/gameplay/interactable.tscn" id="8_8a7m2"]
 
+[sub_resource type="Resource" id="Resource_sbmf2"]
+script = ExtResource("7_2r1tl")
+text = "This exit appears to be blocked off. Maybe there's another way out?"
+metadata/_custom_type_script = "uid://cb4nyolipk5xc"
+
 [sub_resource type="Resource" id="Resource_jprdt"]
 script = ExtResource("7_2r1tl")
 text = "xmasters.com? I wonder what that is."
@@ -56,6 +61,7 @@ metadata/_custom_type_script = "uid://cb4nyolipk5xc"
 
 [node name="Level" type="Node2D" unique_id=1566062915]
 script = ExtResource("1_dywbp")
+spawn_dialogue = Array[ExtResource("7_2r1tl")]([SubResource("Resource_sbmf2")])
 
 [node name="Tiles" type="Node2D" parent="." unique_id=545103342]
 texture_filter = 1
@@ -142,29 +148,38 @@ position = Vector2(784, 416)
 enemy_id = "11"
 initial_facing = 1
 vision_range = 3
+puzzle_id = "a0000011-0000-0000-0000-000000000000"
 battle_dialogue = Array[ExtResource("7_2r1tl")]([SubResource("Resource_8a7m2")])
 
 [node name="Enemy2" parent="Enemies" unique_id=1646914723 instance=ExtResource("6_1seuy")]
 position = Vector2(816, 448)
 enemy_id = "12"
 initial_facing = 2
+puzzle_id = "a0000012-0000-0000-0000-000000000000"
+skill_type = 1
 battle_dialogue = Array[ExtResource("7_2r1tl")]([SubResource("Resource_plydf")])
 
 [node name="Enemy3" parent="Enemies" unique_id=2031881885 instance=ExtResource("6_1seuy")]
 position = Vector2(576, 368)
 enemy_id = "13"
 initial_facing = 1
+puzzle_id = "a0000013-0000-0000-0000-000000000000"
+skill_type = 2
 battle_dialogue = Array[ExtResource("7_2r1tl")]([SubResource("Resource_5ntmo")])
 
 [node name="Enemy4" parent="Enemies" unique_id=512622924 instance=ExtResource("6_1seuy")]
 position = Vector2(576, 448)
 enemy_id = "14"
 initial_facing = 2
+puzzle_id = "a0000014-0000-0000-0000-000000000000"
+skill_type = 3
 battle_dialogue = Array[ExtResource("7_2r1tl")]([SubResource("Resource_nkeig")])
 
 [node name="Enemy5" parent="Enemies" unique_id=1463367384 instance=ExtResource("6_1seuy")]
 position = Vector2(528, 288)
 enemy_id = "15"
 initial_facing = 2
+puzzle_id = "a0000015-0000-0000-0000-000000000000"
+skill_type = 2
 battle_dialogue = Array[ExtResource("7_2r1tl")]([SubResource("Resource_nfihu")])
 is_level_boss = true

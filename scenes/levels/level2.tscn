@@ -9,6 +9,12 @@
 [ext_resource type="Script" uid="uid://cb4nyolipk5xc" path="res://scripts/gameplay/data/dialogue_entry.gd" id="7_dj4wq"]
 [ext_resource type="PackedScene" uid="uid://dfbkn4r5vpnig" path="res://scenes/gameplay/interactable.tscn" id="8_k0mew"]
 
+[sub_resource type="Resource" id="Resource_hkuam"]
+script = ExtResource("7_dj4wq")
+speaker_name = "ODIN"
+text = "Uh oh. Looks like there are more bugs here."
+metadata/_custom_type_script = "uid://cb4nyolipk5xc"
+
 [sub_resource type="Resource" id="Resource_k0mew"]
 script = ExtResource("7_dj4wq")
 speaker_name = "The Infinite Striker"
@@ -39,6 +45,12 @@ speaker_name = "The Nested Beast"
 text = "Tables! Seats! Rows! Columns! My mind cannot process two dimensions at once! I wiped table one, but the inner loop is trapped in my claws! Build the nested architecture so I can reach the rest!"
 metadata/_custom_type_script = "uid://cb4nyolipk5xc"
 
+[sub_resource type="Resource" id="Resource_f3b2k"]
+script = ExtResource("7_dj4wq")
+speaker_name = "The Nested Beast"
+text = "Boss is in the pool club if you're looking for em."
+metadata/_custom_type_script = "uid://cb4nyolipk5xc"
+
 [sub_resource type="Resource" id="Resource_b4tpv"]
 script = ExtResource("7_dj4wq")
 text = "You found the easter egg! If you're the first to find this, shout \"ODIN is the best!\" to claim your prize!"
@@ -51,6 +63,7 @@ metadata/_custom_type_script = "uid://cb4nyolipk5xc"
 
 [node name="Level" type="Node2D" unique_id=1566062915]
 script = ExtResource("1_d5djh")
+spawn_dialogue = Array[ExtResource("7_dj4wq")]([SubResource("Resource_hkuam")])
 
 [node name="Tiles" type="Node2D" parent="." unique_id=545103342]
 texture_filter = 1
@@ -111,29 +124,40 @@ position = Vector2(400, 272)
 position = Vector2(368, 208)
 enemy_id = "21"
 initial_facing = 1
+puzzle_id = "a0000021-0000-0000-0000-000000000000"
+skill_type = 2
 battle_dialogue = Array[ExtResource("7_dj4wq")]([SubResource("Resource_k0mew")])
 
 [node name="Enemy2" parent="Enemies" unique_id=1569798251 instance=ExtResource("6_ok6xr")]
 position = Vector2(448, 240)
 enemy_id = "22"
 initial_facing = 3
+puzzle_id = "a0000022-0000-0000-0000-000000000000"
+skill_type = 2
 battle_dialogue = Array[ExtResource("7_dj4wq")]([SubResource("Resource_b0vvs")])
 
 [node name="Enemy3" parent="Enemies" unique_id=720417154 instance=ExtResource("6_ok6xr")]
 position = Vector2(560, 256)
 enemy_id = "23"
+puzzle_id = "a0000023-0000-0000-0000-000000000000"
+skill_type = 2
 battle_dialogue = Array[ExtResource("7_dj4wq")]([SubResource("Resource_oyk6k")])
 
 [node name="Enemy4" parent="Enemies" unique_id=879925758 instance=ExtResource("6_ok6xr")]
 position = Vector2(560, 160)
 enemy_id = "24"
+puzzle_id = "a0000023-0000-0000-0000-000000000000"
+skill_type = 2
 battle_dialogue = Array[ExtResource("7_dj4wq")]([SubResource("Resource_gycjm")])
 
 [node name="Enemy5" parent="Enemies" unique_id=1309597842 instance=ExtResource("6_ok6xr")]
 position = Vector2(672, 128)
 enemy_id = "25"
 initial_facing = 2
+puzzle_id = "a0000024-0000-0000-0000-000000000000"
+skill_type = 2
 battle_dialogue = Array[ExtResource("7_dj4wq")]([SubResource("Resource_8i1lk")])
+defeat_dialogue = Array[ExtResource("7_dj4wq")]([SubResource("Resource_f3b2k")])
 is_level_boss = true
 
 [node name="Scene Trigger" parent="." unique_id=1958637780 instance=ExtResource("4_k0mew")]

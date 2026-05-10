@@ -15,6 +15,7 @@ extends Node
 # HashSet<string> → Dictionary with dummy values for O(1) has().
 var defeated_enemies: Dictionary = {}
 var triggered_dialogues: Dictionary = {}
+var final_boss_defeated: bool = false
 var instance: Node
 
 func _ready() -> void:

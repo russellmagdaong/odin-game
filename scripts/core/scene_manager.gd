@@ -233,10 +233,12 @@ func end_battle() -> void:
 	var is_level_boss := false
 	if enemy != null:
 		var enemy_id: String = str(enemy.get("enemy_id"))
-		if not enemy_id.is_empty():
-			Globals.defeated_enemies[enemy_id] = true
 		is_final = enemy.get("is_final_boss") == true
 		is_level_boss = enemy.get("is_level_boss") == true
+		if not enemy_id.is_empty() and not is_final:
+			Globals.defeated_enemies[enemy_id] = true
+		if is_final:
+			Globals.final_boss_defeated = true
 
 	if is_level_boss and not is_final:
 		_award_level_achievement()

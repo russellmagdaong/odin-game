@@ -1,13 +1,32 @@
 [gd_scene format=4 uid="uid://ddo58a5g7wx6h"]
 
 [ext_resource type="Script" uid="uid://cbwp1lyuwxlo2" path="res://scripts/gameplay/levels/level.gd" id="1_ru30r"]
+[ext_resource type="Script" uid="uid://cb4nyolipk5xc" path="res://scripts/gameplay/data/dialogue_entry.gd" id="2_e8phx"]
 [ext_resource type="TileSet" uid="uid://dcr5fbb43fjy5" path="res://resources/tilesets/base.tres" id="2_fmls3"]
 [ext_resource type="TileSet" uid="uid://bqur8s0jq4inl" path="res://resources/tilesets/level0.tres" id="3_e8phx"]
 [ext_resource type="PackedScene" uid="uid://d3rfm412vaosh" path="res://scenes/levels/scene_trigger.tscn" id="4_srmi1"]
 [ext_resource type="PackedScene" uid="uid://cwbt703kyy1av" path="res://scenes/levels/spawn_point.tscn" id="5_vnmim"]
+[ext_resource type="PackedScene" uid="uid://dfbkn4r5vpnig" path="res://scenes/gameplay/interactable.tscn" id="7_e8phx"]
+
+[sub_resource type="Resource" id="Resource_srmi1"]
+script = ExtResource("2_e8phx")
+text = "Ugh fresh air! Maybe There are clues in the fastfood restaurant near campus."
+metadata/_custom_type_script = "uid://cb4nyolipk5xc"
+
+[sub_resource type="Resource" id="Resource_e8phx"]
+script = ExtResource("2_e8phx")
+speaker_name = "ODIN"
+text = "Let's go! You must be quite hungry."
+metadata/_custom_type_script = "uid://cb4nyolipk5xc"
+
+[sub_resource type="Resource" id="Resource_vnmim"]
+script = ExtResource("2_e8phx")
+text = "There are a few coins down there."
+metadata/_custom_type_script = "uid://cb4nyolipk5xc"
 
 [node name="Level" type="Node2D" unique_id=1566062915]
 script = ExtResource("1_ru30r")
+spawn_dialogue = Array[ExtResource("2_e8phx")]([SubResource("Resource_srmi1"), SubResource("Resource_e8phx")])
 
 [node name="Tiles" type="Node2D" parent="." unique_id=545103342]
 texture_filter = 1
@@ -84,3 +103,63 @@ entry_direction = Vector2(-1, 0)
 
 [node name="SpawnPoint" parent="SpawnPoints" unique_id=1733327866 instance=ExtResource("5_vnmim")]
 position = Vector2(352, 288)
+
+[node name="Interactable" parent="." unique_id=819323372 instance=ExtResource("7_e8phx")]
+position = Vector2(448, 288)
+dialogues = Array[ExtResource("2_e8phx")]([SubResource("Resource_vnmim")])
+
+[node name="Interactable2" parent="." unique_id=2142599936 instance=ExtResource("7_e8phx")]
+position = Vector2(464, 288)
+dialogues = Array[ExtResource("2_e8phx")]([SubResource("Resource_vnmim")])
+
+[node name="Interactable3" parent="." unique_id=511927560 instance=ExtResource("7_e8phx")]
+position = Vector2(480, 288)
+dialogues = Array[ExtResource("2_e8phx")]([SubResource("Resource_vnmim")])
+
+[node name="Interactable4" parent="." unique_id=1853531037 instance=ExtResource("7_e8phx")]
+position = Vector2(496, 288)
+dialogues = Array[ExtResource("2_e8phx")]([SubResource("Resource_vnmim")])
+
+[node name="Interactable5" parent="." unique_id=713703693 instance=ExtResource("7_e8phx")]
+position = Vector2(512, 288)
+dialogues = Array[ExtResource("2_e8phx")]([SubResource("Resource_vnmim")])
+
+[node name="Interactable6" parent="." unique_id=1044104363 instance=ExtResource("7_e8phx")]
+position = Vector2(512, 272)
+dialogues = Array[ExtResource("2_e8phx")]([SubResource("Resource_vnmim")])
+
+[node name="Interactable7" parent="." unique_id=1386447359 instance=ExtResource("7_e8phx")]
+position = Vector2(512, 256)
+dialogues = Array[ExtResource("2_e8phx")]([SubResource("Resource_vnmim")])
+
+[node name="Interactable8" parent="." unique_id=111635060 instance=ExtResource("7_e8phx")]
+position = Vector2(512, 240)
+dialogues = Array[ExtResource("2_e8phx")]([SubResource("Resource_vnmim")])
+
+[node name="Interactable9" parent="." unique_id=786313262 instance=ExtResource("7_e8phx")]
+position = Vector2(496, 240)
+dialogues = Array[ExtResource("2_e8phx")]([SubResource("Resource_vnmim")])
+
+[node name="Interactable10" parent="." unique_id=1952775411 instance=ExtResource("7_e8phx")]
+position = Vector2(480, 240)
+dialogues = Array[ExtResource("2_e8phx")]([SubResource("Resource_vnmim")])
+
+[node name="Interactable11" parent="." unique_id=1736592459 instance=ExtResource("7_e8phx")]
+position = Vector2(464, 240)
+dialogues = Array[ExtResource("2_e8phx")]([SubResource("Resource_vnmim")])
+
+[node name="Interactable12" parent="." unique_id=572957400 instance=ExtResource("7_e8phx")]
+position = Vector2(448, 240)
+dialogues = Array[ExtResource("2_e8phx")]([SubResource("Resource_vnmim")])
+
+[node name="Interactable13" parent="." unique_id=1522481938 instance=ExtResource("7_e8phx")]
+position = Vector2(448, 256)
+dialogues = Array[ExtResource("2_e8phx")]([SubResource("Resource_vnmim")])
+
+[node name="Interactable14" parent="." unique_id=977915484 instance=ExtResource("7_e8phx")]
+position = Vector2(448, 272)
+dialogues = Array[ExtResource("2_e8phx")]([SubResource("Resource_vnmim")])
+
+[node name="Interactable15" parent="." unique_id=1315495879 instance=ExtResource("7_e8phx")]
+position = Vector2(448, 288)
+dialogues = Array[ExtResource("2_e8phx")]([SubResource("Resource_vnmim")])
