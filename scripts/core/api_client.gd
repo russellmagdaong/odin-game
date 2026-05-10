@@ -118,6 +118,12 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 	match tag:
 		"submission":
 			submission_completed.emit(data)
+			if OS.has_feature("web"):
+				var achievements: Array = data.get("newAchievements", [])
+				if achievements is Array and not achievements.is_empty():
+					JavaScriptBridge.eval(
+						"window.parent.postMessage({type:'odin_achievements_unlocked',achievements:%s},'*');" % JSON.stringify(achievements)
+					)
 		"session_start":
 			session_created.emit(data)
 			if OS.has_feature("web"):
