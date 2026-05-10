@@ -6,7 +6,7 @@ var _submit_btn: Button
 
 const PLAYER_SPRITE_HEIGHT = 150.0
 const ENEMY_SPRITE_HEIGHT = 200.0
-const CODE_FONT_SIZE_DEFAULT: int = 14
+const CODE_FONT_SIZE_DEFAULT: int = 20
 const CODE_FONT_SIZE_MIN: int = 6
 const CODE_FONT_SIZE_MAX: int = 32
 
