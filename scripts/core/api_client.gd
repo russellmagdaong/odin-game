@@ -120,25 +120,21 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 #   <script>window.ODIN_API_URL = "https://api.yourserver.com";</script>
 func _get_base_url() -> String:
 	if OS.has_feature("web"):
-		var js_url = JavaScriptBridge.eval("window.ODIN_API_URL || ''")
+		var js_url = JavaScriptBridge.eval("(window.parent.__ODIN_GAME_CONFIG?.apiUrl) || window.ODIN_API_URL || ''")
 		if typeof(js_url) == TYPE_STRING and not (js_url as String).is_empty():
 			return js_url
 	return "http://localhost:5000"
 
-# In web builds, the HTML page injects the Supabase user ID:
-#   <script>window.ODIN_USER_ID = "{{ current_user.id }}";</script>
 func _get_user_id() -> String:
 	if OS.has_feature("web"):
-		var js_id = JavaScriptBridge.eval("window.ODIN_USER_ID || ''")
+		var js_id = JavaScriptBridge.eval("(window.parent.__ODIN_GAME_CONFIG?.userId) || window.ODIN_USER_ID || ''")
 		if typeof(js_id) == TYPE_STRING and not (js_id as String).is_empty():
 			return js_id
 	return "local_dev"
 
-# In web builds, the HTML page injects the Supabase JWT access token:
-#   <script>window.ODIN_JWT_TOKEN = "{{ supabase_session.access_token }}";</script>
 func _get_jwt_token() -> String:
 	if OS.has_feature("web"):
-		var js_token = JavaScriptBridge.eval("window.ODIN_JWT_TOKEN || ''")
+		var js_token = JavaScriptBridge.eval("(window.parent.__ODIN_GAME_CONFIG?.token) || window.ODIN_JWT_TOKEN || ''")
 		if typeof(js_token) == TYPE_STRING and not (js_token as String).is_empty():
 			return js_token
 	return ""
