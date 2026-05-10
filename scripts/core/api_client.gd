@@ -107,6 +107,12 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 			submission_completed.emit(data)
 		"session_start":
 			session_created.emit(data)
+			if OS.has_feature("web"):
+				var sid := str(data.get("id", ""))
+				if not sid.is_empty():
+					JavaScriptBridge.eval(
+						"window.parent.postMessage({type:'odin_session_started',sessionId:'%s'},'*');" % sid
+					)
 		"puzzle_fetch":
 			puzzle_fetched.emit(data)
 

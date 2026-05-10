@@ -98,6 +98,7 @@ func _on_submit_pressed() -> void:
 			"averageDwellTimeMs":  raw_metrics.get("avg_dwell_time_ms",  -1.0),
 			"initialLatencyMs":    raw_metrics.get("initial_latency_ms", -1.0),
 			"totalTimeSeconds":    raw_metrics.get("total_time_seconds",  0.0),
+			"rawEvents":           raw_metrics.get("raw_events", []),
 		},
 	}
 	_previous_code = code
@@ -129,7 +130,7 @@ func _on_submission_completed(data: Dictionary) -> void:
 
 	var correct: bool              = data.get("isCorrect", false)
 	var diag_msg: String           = data.get("diagnosticMessage", "")
-	var diag_category: String      = data.get("diagnosticCategory", "")
+	var _diag_category: String     = data.get("diagnosticCategory", "")
 	var intervention_type: String  = data.get("interventionType", "None")
 	var npc_dialogue: Dictionary   = data.get("npcDialogue", {})
 	var is_mastered: bool          = data.get("isMastered", false)
@@ -143,26 +144,29 @@ func _on_submission_completed(data: Dictionary) -> void:
 
 	if correct:
 		_output_text.text = "✓ Correct!    Mastery: %d%%" % int(mastery_pct)
-	else:
-		var msg := diag_msg if not diag_msg.is_empty() else "Incorrect."
-		_output_text.text = "✗ %s\n%s%s" % [msg, diag_category, loc]
+		if xp > 0:
+			_output_text.text += "\n+%d XP" % xp
+		if is_mastered:
+			await _show_server_dialogue("Odin", "You've mastered this skill. Well done.", "")
+		_finish_session(true)
+		return
+
+	var msg := diag_msg if not diag_msg.is_empty() else "Incorrect."
+	_output_text.text = "✗ %s%s" % [msg, loc]
 
 	if xp > 0:
 		_output_text.text += "\n+%d XP" % xp
 
 	match intervention_type:
 		"ScaffoldingHint":
-			await _show_server_dialogue(
-				npc_dialogue.get("npcName", "Odin"),
-				npc_dialogue.get("dialogueText", ""),
-				npc_dialogue.get("technicalHint", "")
-			)
+			var support: String = npc_dialogue.get("dialogueText", "")
+			var hint: String    = npc_dialogue.get("technicalHint", "")
+			if not hint.is_empty():
+				support = (support + "\n" if not support.is_empty() else "") + hint
+			if not support.is_empty():
+				_output_text.text += "\n\nOdin: " + support
 		"Rejection":
 			_output_text.text += "\nTry a different approach."
-
-	if is_mastered:
-		await _show_server_dialogue("Odin", "You've mastered this skill. Well done.", "")
-		_finish_session(true)
 
 func _on_request_failed(tag: String, code: int) -> void:
 	match tag:

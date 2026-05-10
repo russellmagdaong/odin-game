@@ -31,7 +31,12 @@ func _ready() -> void:
 		SceneManager.change_level(level, 0, 0, true)
 		return
 
+	PlayerDataManager.load_data()
 	_create_settings_button()
+	if OS.has_feature("web"):
+		var saved: Variant = JavaScriptBridge.eval("localStorage.getItem('odin_character') || ''")
+		if typeof(saved) == TYPE_STRING and not (saved as String).is_empty():
+			Globals.selected_character = saved
 	show_main_menu()
 
 func show_main_menu() -> void:
@@ -59,6 +64,8 @@ func _on_game_start_requested(character: String) -> void:
 		main_menu_layer.queue_free()
 
 	Globals.selected_character = character
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("localStorage.setItem('odin_character','%s');" % character)
 
 	var target_level: int = Enums.LevelName.Level0
 	if not PlayerDataManager.last_level_name.is_empty():

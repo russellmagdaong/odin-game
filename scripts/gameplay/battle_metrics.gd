@@ -7,6 +7,7 @@ var _last_key_up_ms: float = -1.0
 var _dwell_times: Array[float] = []
 var _flight_times: Array[float] = []
 var _key_down_times: Dictionary = {}
+var _raw_events: Array = []
 
 func start() -> void:
 	_load_time_ms = float(Time.get_ticks_msec())
@@ -18,6 +19,7 @@ func record_key_down(keycode: int) -> void:
 	if _last_key_up_ms >= 0.0:
 		_flight_times.append(now - _last_key_up_ms)
 	_key_down_times[keycode] = now
+	_raw_events.append([int(now), keycode, 0])
 
 func record_key_up(keycode: int) -> void:
 	var now := float(Time.get_ticks_msec())
@@ -25,6 +27,7 @@ func record_key_up(keycode: int) -> void:
 	if keycode in _key_down_times:
 		_dwell_times.append(now - float(_key_down_times[keycode]))
 		_key_down_times.erase(keycode)
+	_raw_events.append([int(now), keycode, 1])
 
 func collect() -> Dictionary:
 	var now := float(Time.get_ticks_msec())
@@ -34,9 +37,11 @@ func collect() -> Dictionary:
 		"initial_latency_ms":  (_first_key_time_ms - _load_time_ms) if _first_key_time_ms >= 0.0 else -1.0,
 		"total_time_seconds":  (now - _load_time_ms) / 1000.0,
 	}
+	result["raw_events"] = _raw_events.duplicate()
 	# Reset per-attempt buffers so next submission reflects only that attempt's keystrokes.
 	_dwell_times.clear()
 	_flight_times.clear()
+	_raw_events.clear()
 	_first_key_time_ms = -1.0
 	_last_key_up_ms    = -1.0
 	_load_time_ms      = now
