@@ -69,7 +69,7 @@ func _flush() -> void:
 	var req: Dictionary = _queue.pop_front()
 	_current_tag = req.tag
 
-	var body := JSON.stringify(req.payload)
+	var body := "" if req.method == HTTPClient.METHOD_GET else JSON.stringify(req.payload)
 	var headers: PackedStringArray = ["Content-Type: application/json", "Accept: application/json"]
 	if not _jwt_token.is_empty():
 		headers.append("Authorization: Bearer " + _jwt_token)
