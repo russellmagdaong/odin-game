@@ -148,6 +148,7 @@ func _on_submission_completed(data: Dictionary) -> void:
 			_output_text.text += "\n+%d XP" % xp
 		if is_mastered:
 			await _show_server_dialogue("Odin", "You've mastered this skill. Well done.", "")
+		await get_tree().create_timer(3.0).timeout
 		_finish_session(true)
 		return
 

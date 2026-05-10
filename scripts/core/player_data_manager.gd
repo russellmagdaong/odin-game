@@ -71,8 +71,10 @@ func load_data() -> void:
 		achievements.append(str(b))
 
 	triggered_dialogues = []
+	Globals.triggered_dialogues.clear()
 	for t in data.get("triggered_dialogues", []):
 		triggered_dialogues.append(str(t))
+		Globals.triggered_dialogues[str(t)] = true
 
 func save_character(character: String) -> void:
 	selected_character = character
@@ -109,6 +111,9 @@ func set_from_server(
 	last_level_name     = p_last_level
 	last_position       = p_last_position
 	triggered_dialogues = p_triggered_dialogues
+	Globals.triggered_dialogues.clear()
+	for t in triggered_dialogues:
+		Globals.triggered_dialogues[t] = true
 
 func _write_to_file() -> void:
 	var data := {
