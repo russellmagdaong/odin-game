@@ -43,6 +43,7 @@ func _ready() -> void:
 	_metrics.start()
 
 	_code_editor.gui_input.connect(_on_code_editor_input)
+	_code_editor.text_changed.connect(_adjust_code_font_size)
 	ApiClient.submission_completed.connect(_on_submission_completed)
 	ApiClient.session_created.connect(_on_session_created)
 	ApiClient.request_failed.connect(_on_request_failed)
@@ -119,6 +120,7 @@ func _on_puzzle_fetched(data: Dictionary) -> void:
 	if not code.is_empty():
 		_code_editor.text = code
 		_code_editor.set_caret_line(_code_editor.get_line_count() - 1)
+		call_deferred("_adjust_code_font_size")
 
 func _on_session_created(data: Dictionary) -> void:
 	_session_id = str(data.get("id", ""))
@@ -132,8 +134,8 @@ func _on_submission_completed(data: Dictionary) -> void:
 
 	var diag_msg: String           = data.get("diagnosticMessage", "")
 	var _diag_category: String     = data.get("diagnosticCategory", "")
-	var intervention_type: String  = data.get("interventionType", "None")
-	var npc_dialogue: Dictionary   = data.get("npcDialogue", {})
+	var _intervention_type: String  = data.get("interventionType", "None")
+	var _npc_dialogue: Dictionary   = data.get("npcDialogue", {})
 	var is_mastered: bool          = data.get("isMastered", false)
 	var mastery_pct: float         = data.get("masteryProbability", 0.0) * 100.0
 	var xp: int                    = data.get("xpAwarded", 0)
@@ -158,17 +160,6 @@ func _on_submission_completed(data: Dictionary) -> void:
 
 	if xp > 0:
 		_output_text.text += "\n+%d XP" % xp
-
-	match intervention_type:
-		"ScaffoldingHint":
-			var support: String = npc_dialogue.get("dialogueText", "")
-			var hint: String    = npc_dialogue.get("technicalHint", "")
-			if not hint.is_empty():
-				support = (support + "\n" if not support.is_empty() else "") + hint
-			if not support.is_empty():
-				_output_text.text += "\n\n" + support
-		"Rejection":
-			_output_text.text += "\nTry a different approach."
 
 func _on_request_failed(tag: String, code: int) -> void:
 	match tag:
@@ -293,6 +284,20 @@ func _load_battle_texture(folder: String, texture_name: String) -> Texture2D:
 		return null
 	var path := "res://assets/battle/%s/%s.png" % [folder, texture_name]
 	return load(path) if ResourceLoader.exists(path) else null
+
+func _adjust_code_font_size() -> void:
+	var available: float = _code_editor.size.y
+	if available <= 0:
+		return
+	var font: Font = _code_editor.get_theme_font("font")
+	if font == null:
+		return
+	var line_count: int = _code_editor.get_line_count()
+	for f_size in range(14, 5, -1):
+		if line_count * (font.get_height(f_size) + 4.0) <= available:
+			_code_editor.add_theme_font_size_override("font_size", f_size)
+			return
+	_code_editor.add_theme_font_size_override("font_size", 6)
 
 func set_problem_text(text: String) -> void:
 	var label = get_node("%ProblemText")

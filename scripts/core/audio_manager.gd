@@ -16,9 +16,12 @@ const _SFX: Dictionary = {
 
 const _OUTDOOR_LEVELS: Array = ["Level11", "Level12"]
 
+const FADE_DURATION: float = 1.0
+
 var _music_player: AudioStreamPlayer
 var _sfx_player: AudioStreamPlayer
 var _current_music: String = ""
+var _fade_tween: Tween = null
 
 func _ready() -> void:
 	_ensure_buses()
@@ -57,10 +60,19 @@ func play_music(track: String) -> void:
 	if _current_music == track and _music_player.playing:
 		return
 	_current_music = track
-	var stream: AudioStream = load(_MUSIC[track])
-	stream.set("loop", true)
-	_music_player.stream = stream
-	_music_player.play()
+	if _fade_tween != null:
+		_fade_tween.kill()
+	_fade_tween = create_tween()
+	if _music_player.playing:
+		_fade_tween.tween_property(_music_player, "volume_db", -80.0, FADE_DURATION)
+	_fade_tween.tween_callback(func():
+		var stream: AudioStream = load(_MUSIC[track])
+		stream.set("loop", true)
+		_music_player.stream = stream
+		_music_player.volume_db = -80.0
+		_music_player.play()
+	)
+	_fade_tween.tween_property(_music_player, "volume_db", 0.0, FADE_DURATION)
 
 func play_music_for_level(level_name: String) -> void:
 	if level_name.is_empty():
@@ -72,7 +84,11 @@ func play_music_for_level(level_name: String) -> void:
 
 func stop_music() -> void:
 	_current_music = ""
-	_music_player.stop()
+	if _fade_tween != null:
+		_fade_tween.kill()
+	_fade_tween = create_tween()
+	_fade_tween.tween_property(_music_player, "volume_db", -80.0, FADE_DURATION)
+	_fade_tween.tween_callback(_music_player.stop)
 
 func play_sfx(sfx: String) -> void:
 	_sfx_player.stream = load(_SFX[sfx])
