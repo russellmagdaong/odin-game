@@ -165,7 +165,7 @@ func _on_submission_completed(data: Dictionary) -> void:
 			if not hint.is_empty():
 				support = (support + "\n" if not support.is_empty() else "") + hint
 			if not support.is_empty():
-				_output_text.text += "\n\nOdin: " + support
+				_output_text.text += "\n\n" + support
 		"Rejection":
 			_output_text.text += "\nTry a different approach."
 

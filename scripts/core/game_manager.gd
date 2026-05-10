@@ -15,12 +15,14 @@ var is_dev_boot: bool = false
 var dev_boot_level: int = Enums.LevelName.Level0
 var _pause_menu: Node
 var _settings_layer: CanvasLayer
+var _js_save_cb: JavaScriptObject
 
 func _ready() -> void:
 	if GameViewPort == null:
 		return
 	GameManager.instance = self
 	GameLogger.info("Loading game manager ...")
+	_setup_js_save_listener()
 
 	if GameManager.is_dev_boot:
 		GameManager.is_dev_boot = false
@@ -153,3 +155,21 @@ func _create_settings_button() -> void:
 
 func _target():
 	return GameManager.instance if GameManager.instance != null else self
+
+func _setup_js_save_listener() -> void:
+	if not OS.has_feature("web"):
+		return
+	_js_save_cb = JavaScriptBridge.create_callback(_on_js_save_requested)
+	JavaScriptBridge.get_interface("window").odinSaveCb = _js_save_cb
+	JavaScriptBridge.eval("""
+		window.addEventListener('message', function(e) {
+			if (e.data && e.data.type === 'odin_save_request') {
+				window.odinSaveCb();
+			}
+		});
+	""")
+
+func _on_js_save_requested(_args: Array) -> void:
+	var current_player = get_player()
+	if current_player != null and SceneManager.current_level != null:
+		PlayerDataManager.save_progress(str(SceneManager.current_level.name), current_player.global_position)
