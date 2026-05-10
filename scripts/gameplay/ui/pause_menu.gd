@@ -32,8 +32,8 @@ func _ready() -> void:
 	sfx_slider.value = db_to_linear(AudioServer.get_bus_volume_db(sfx_bus)) if sfx_bus >= 0 else 1.0
 	fullscreen_toggle.button_pressed = DisplayServer.window_get_mode() in [DisplayServer.WINDOW_MODE_FULLSCREEN, DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN]
 	
-	music_slider.value_changed.connect(func(v): _set_bus_volume("Music", v))
-	sfx_slider.value_changed.connect(func(v): _set_bus_volume("SFX", v))
+	music_slider.value_changed.connect(func(v): _set_bus_volume("Music", v); AudioManager.save_settings())
+	sfx_slider.value_changed.connect(func(v): _set_bus_volume("SFX", v); AudioManager.save_settings())
 	fullscreen_toggle.toggled.connect(func(on): DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED))
 	
 	_populate_achievements()
