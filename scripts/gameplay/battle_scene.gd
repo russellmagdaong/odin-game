@@ -126,9 +126,10 @@ func _on_session_created(data: Dictionary) -> void:
 	GameLogger.info("BattleScene: session created id=%s" % _session_id)
 
 func _on_submission_completed(data: Dictionary) -> void:
-	_submit_btn.disabled = false
-
 	var correct: bool              = data.get("isCorrect", false)
+	if not correct:
+		_submit_btn.disabled = false
+
 	var diag_msg: String           = data.get("diagnosticMessage", "")
 	var _diag_category: String     = data.get("diagnosticCategory", "")
 	var intervention_type: String  = data.get("interventionType", "None")

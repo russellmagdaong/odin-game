@@ -53,6 +53,10 @@ func _process(_delta: float) -> void:
 		else:
 			dir_to_boss = Vector2.DOWN if diff.y > 0 else Vector2.UP
 
+		var player_movement: CharacterMovement = player.get_node_or_null("Movement")
+		if player_movement != null and player_movement.is_moving():
+			return
+
 		var player_char_input: CharacterInput = player.get_node_or_null("Input")
 		var player_dir: Vector2 = player_char_input.direction if player_char_input != null else Vector2.ZERO
 

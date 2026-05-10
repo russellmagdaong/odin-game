@@ -23,6 +23,10 @@ func _process(_delta: float) -> void:
 	if player == null:
 		return
 
+	var movement: CharacterMovement = player.get_node_or_null("Movement")
+	if movement != null and movement.is_moving():
+		return
+
 	var input: CharacterInput = player.get_node_or_null("Input")
 	if input == null or input.direction == Vector2.ZERO:
 		return
