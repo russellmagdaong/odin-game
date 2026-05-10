@@ -133,26 +133,30 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 			var json2 := JSON.new()
 			if json2.parse(raw) == OK and json2.data is Dictionary:
 				var gs: Dictionary = json2.data
-				var achiev: Array[String] = []
-				for a in gs.get("achievements", []):
-					achiev.append(str(a))
-				var dialogues: Array[String] = []
-				for d in gs.get("triggered_dialogues", []):
-					dialogues.append(str(d))
-				PlayerDataManager.set_from_server(
-					true,
-					gs.get("player_name", PlayerDataManager.player_name),
-					gs.get("selected_character", PlayerDataManager.selected_character),
-					achiev,
-					gs.get("last_level", PlayerDataManager.last_level_name),
-					Vector2(gs.get("last_position_x", 0.0), gs.get("last_position_y", 0.0)),
-					dialogues
-				)
-				PlayerDataManager.defeated_enemies.clear()
-				Globals.defeated_enemies.clear()
-				for e in gs.get("defeated_enemies", []):
-					PlayerDataManager.defeated_enemies.append(str(e))
-					Globals.defeated_enemies[str(e)] = true
+				# Empty state means an admin reset occurred — wipe local save and signal the menu
+				if gs.is_empty():
+					PlayerDataManager.reset_to_defaults()
+				else:
+					var achiev: Array[String] = []
+					for a in gs.get("achievements", []):
+						achiev.append(str(a))
+					var dialogues: Array[String] = []
+					for d in gs.get("triggered_dialogues", []):
+						dialogues.append(str(d))
+					PlayerDataManager.set_from_server(
+						true,
+						gs.get("player_name", PlayerDataManager.player_name),
+						gs.get("selected_character", PlayerDataManager.selected_character),
+						achiev,
+						gs.get("last_level", PlayerDataManager.last_level_name),
+						Vector2(gs.get("last_position_x", 0.0), gs.get("last_position_y", 0.0)),
+						dialogues
+					)
+					PlayerDataManager.defeated_enemies.clear()
+					Globals.defeated_enemies.clear()
+					for e in gs.get("defeated_enemies", []):
+						PlayerDataManager.defeated_enemies.append(str(e))
+						Globals.defeated_enemies[str(e)] = true
 
 	_flush()
 

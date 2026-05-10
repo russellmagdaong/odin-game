@@ -3,6 +3,8 @@ extends Node
 # Persists player data to user://player_data.json (IndexedDB on web).
 # When your server is ready, replace load_data/write_to_file with HTTP calls.
 
+signal progress_reset
+
 const SAVE_PATH: String = "user://player_data.json"
 
 const ACHIEVEMENTS: Array = [
@@ -110,6 +112,23 @@ func unlock_achievement(id: String) -> void:
 	if id not in achievements:
 		achievements.append(id)
 		_write_to_file()
+
+func reset_to_defaults() -> void:
+	has_played = false
+	player_name = ""
+	selected_character = "playerm"
+	achievements = []
+	last_level_name = ""
+	last_position = Vector2.ZERO
+	triggered_dialogues = []
+	defeated_enemies = []
+	Globals.triggered_dialogues.clear()
+	Globals.defeated_enemies.clear()
+	# Delete local file so next boot also starts fresh
+	var dir := DirAccess.open("user://")
+	if dir:
+		dir.remove("player_data.json")
+	progress_reset.emit()
 
 func set_from_server(
 		p_has_played: bool,
