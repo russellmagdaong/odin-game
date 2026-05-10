@@ -144,7 +144,7 @@ func _on_submission_completed(data: Dictionary) -> void:
 	var loc := "  (line %d)" % line_no if line_no > 0 else ""
 
 	if correct:
-		_output_text.text = "✓ Correct!    Mastery: %d%%" % int(mastery_pct)
+		_output_text.text = "Correct!    Mastery: %d%%" % int(mastery_pct)
 		if xp > 0:
 			_output_text.text += "\n+%d XP" % xp
 		if is_mastered:
@@ -154,7 +154,7 @@ func _on_submission_completed(data: Dictionary) -> void:
 		return
 
 	var msg := diag_msg if not diag_msg.is_empty() else "Incorrect."
-	_output_text.text = "✗ %s%s" % [msg, loc]
+	_output_text.text = "%s%s" % [msg, loc]
 
 	if xp > 0:
 		_output_text.text += "\n+%d XP" % xp
@@ -306,7 +306,7 @@ func _adjust_problem_font_size(label: Label) -> void:
 	if width <= 0:
 		return
 	var font = label.get_theme_font("font")
-	for f_size in range(16, 7, -1):
+	for f_size in range(64, 7, -1):
 		label.add_theme_font_size_override("font_size", f_size)
 		var text_size = font.get_multiline_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, width, f_size)
 		if text_size.y <= available:

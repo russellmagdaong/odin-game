@@ -85,6 +85,8 @@ func load_data() -> void:
 		defeated_enemies.append(str(e))
 		Globals.defeated_enemies[str(e)] = true
 
+	apply_audio_settings(data)
+
 	# Async: fetch from server — set_from_server() will override local state when it arrives
 	ApiClient.get_game_state()
 
@@ -149,7 +151,17 @@ func set_from_server(
 	for t in triggered_dialogues:
 		Globals.triggered_dialogues[t] = true
 
+func apply_audio_settings(data: Dictionary) -> void:
+	var music_bus := AudioServer.get_bus_index("Music")
+	var sfx_bus   := AudioServer.get_bus_index("SFX")
+	if music_bus >= 0 and data.has("music_volume"):
+		AudioServer.set_bus_volume_db(music_bus, linear_to_db(float(data["music_volume"])))
+	if sfx_bus >= 0 and data.has("sfx_volume"):
+		AudioServer.set_bus_volume_db(sfx_bus, linear_to_db(float(data["sfx_volume"])))
+
 func _write_to_file() -> void:
+	var music_bus := AudioServer.get_bus_index("Music")
+	var sfx_bus   := AudioServer.get_bus_index("SFX")
 	var data := {
 		"selected_character":  selected_character,
 		"player_name":         player_name,
@@ -159,6 +171,8 @@ func _write_to_file() -> void:
 		"last_position_y":     last_position.y,
 		"triggered_dialogues": triggered_dialogues.duplicate(),
 		"defeated_enemies":    defeated_enemies.duplicate(),
+		"music_volume": db_to_linear(AudioServer.get_bus_volume_db(music_bus)) if music_bus >= 0 else 0.5,
+		"sfx_volume":   db_to_linear(AudioServer.get_bus_volume_db(sfx_bus))   if sfx_bus   >= 0 else 0.5,
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.ModeFlags.WRITE)
 	if file != null:

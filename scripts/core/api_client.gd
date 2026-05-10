@@ -157,6 +157,7 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 					for e in gs.get("defeated_enemies", []):
 						PlayerDataManager.defeated_enemies.append(str(e))
 						Globals.defeated_enemies[str(e)] = true
+					PlayerDataManager.apply_audio_settings(gs)
 
 	_flush()
 
