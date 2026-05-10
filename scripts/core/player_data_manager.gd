@@ -83,6 +83,9 @@ func load_data() -> void:
 		defeated_enemies.append(str(e))
 		Globals.defeated_enemies[str(e)] = true
 
+	# Async: fetch from server — set_from_server() will override local state when it arrives
+	ApiClient.get_game_state()
+
 func save_character(character: String) -> void:
 	selected_character = character
 	has_played = true
@@ -141,3 +144,5 @@ func _write_to_file() -> void:
 	var file := FileAccess.open(SAVE_PATH, FileAccess.ModeFlags.WRITE)
 	if file != null:
 		file.store_string(JSON.stringify(data))
+	# Mirror to server for cross-device sync
+	ApiClient.put_game_state(data)

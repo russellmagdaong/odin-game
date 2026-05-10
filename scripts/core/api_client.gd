@@ -52,6 +52,19 @@ func patch_session_end(session_id: String) -> void:
 func get_puzzle(puzzle_id: String) -> void:
 	_enqueue(HTTPClient.METHOD_GET, "/api/puzzle/" + puzzle_id, {}, "puzzle_fetch")
 
+func get_game_state() -> void:
+	var uid := PlayerDataManager.user_id
+	if uid.is_empty() or uid == "local_dev":
+		return
+	_enqueue(HTTPClient.METHOD_GET, "/api/player/" + uid + "/gamestate", {}, "game_state_load")
+
+func put_game_state(gs_data: Dictionary) -> void:
+	var uid := PlayerDataManager.user_id
+	if uid.is_empty() or uid == "local_dev":
+		return
+	_enqueue(HTTPClient.METHOD_PUT, "/api/player/" + uid + "/gamestate",
+			{"data": JSON.stringify(gs_data)}, "game_state_save")
+
 # ---------------------------------------------------------------------------
 # Internal queue
 # ---------------------------------------------------------------------------
@@ -115,6 +128,31 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 					)
 		"puzzle_fetch":
 			puzzle_fetched.emit(data)
+		"game_state_load":
+			var raw := str(data.get("gameState", "{}"))
+			var json2 := JSON.new()
+			if json2.parse(raw) == OK and json2.data is Dictionary:
+				var gs: Dictionary = json2.data
+				var achiev: Array[String] = []
+				for a in gs.get("achievements", []):
+					achiev.append(str(a))
+				var dialogues: Array[String] = []
+				for d in gs.get("triggered_dialogues", []):
+					dialogues.append(str(d))
+				PlayerDataManager.set_from_server(
+					true,
+					gs.get("player_name", PlayerDataManager.player_name),
+					gs.get("selected_character", PlayerDataManager.selected_character),
+					achiev,
+					gs.get("last_level", PlayerDataManager.last_level_name),
+					Vector2(gs.get("last_position_x", 0.0), gs.get("last_position_y", 0.0)),
+					dialogues
+				)
+				PlayerDataManager.defeated_enemies.clear()
+				Globals.defeated_enemies.clear()
+				for e in gs.get("defeated_enemies", []):
+					PlayerDataManager.defeated_enemies.append(str(e))
+					Globals.defeated_enemies[str(e)] = true
 
 	_flush()
 
