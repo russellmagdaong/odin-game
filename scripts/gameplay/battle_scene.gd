@@ -29,6 +29,10 @@ var _last_submit_ms: float = -1.0       # Phase 2: wall-clock ms of last submiss
 var _error_log: Array[Dictionary] = []  # Phase 2: accumulated errors (reset after intervention)
 var _is_baseline: bool = true           # Phase 1: true until first submission fires
 
+# Comment lines in starter code are wrapped to this width (chars) so they
+# fit in the CodeEdit at default zoom (font size 20) without horizontal scroll.
+const COMMENT_WRAP_WIDTH: int = 52
+
 func _ready() -> void:
 	if Globals.instance != null and Globals.instance.ui_theme != null:
 		theme = Globals.instance.ui_theme
@@ -255,8 +259,44 @@ func _on_puzzle_fetched(data: Dictionary) -> void:
 	if not desc.is_empty():
 		set_problem_text(desc)
 	if not code.is_empty():
-		_code_editor.text = code
+		_code_editor.text = _wrap_starter_comments(code)
 		_code_editor.set_caret_line(_code_editor.get_line_count() - 1)
+
+# Wraps only comment lines (// ...) in starter code that exceed COMMENT_WRAP_WIDTH.
+# Code lines are left exactly as-is to preserve correct indentation and syntax.
+func _wrap_starter_comments(code: String) -> String:
+	var lines := code.split("\n")
+	var result: PackedStringArray = PackedStringArray()
+	for raw_line in lines:
+		# Detect indent + comment prefix
+		var stripped := raw_line.strip_edges(true, false)  # strip leading only
+		if stripped.begins_with("//") and raw_line.length() > COMMENT_WRAP_WIDTH:
+			var indent := raw_line.substr(0, raw_line.length() - stripped.length())
+			var content := stripped.substr(2).strip_edges()  # text after //
+			var wrapped_lines := _split_comment(content, indent, COMMENT_WRAP_WIDTH)
+			for wl in wrapped_lines:
+				result.append(wl)
+		else:
+			result.append(raw_line)
+	return "\n".join(result)
+
+# Word-wraps a comment body into multiple "// " prefixed lines.
+func _split_comment(text: String, indent: String, max_width: int) -> Array[String]:
+	var prefix := indent + "// "
+	var words := text.split(" ")
+	var lines: Array[String] = []
+	var current := prefix
+	for word in words:
+		if word.is_empty():
+			continue
+		if current != prefix and (current + word).length() > max_width:
+			lines.append(current.rstrip(" "))
+			current = prefix + word + " "
+		else:
+			current += word + " "
+	if current != prefix:
+		lines.append(current.rstrip(" "))
+	return lines
 
 func _on_session_created(data: Dictionary) -> void:
 	_session_id = str(data.get("id", ""))
