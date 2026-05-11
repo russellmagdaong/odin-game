@@ -104,6 +104,13 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 		_flush()
 		return
 
+	if response_code < 200 or response_code >= 300:
+		var err_text := body.get_string_from_utf8()
+		GameLogger.error("ApiClient: HTTP %d for tag=%s — body: %s" % [response_code, tag, err_text])
+		request_failed.emit(tag, response_code)
+		_flush()
+		return
+
 	var text := body.get_string_from_utf8()
 	var json := JSON.new()
 	if json.parse(text) != OK:
