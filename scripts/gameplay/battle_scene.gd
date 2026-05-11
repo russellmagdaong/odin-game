@@ -23,6 +23,12 @@ var _previous_code: String = ""
 # Keystroke tracker
 var _metrics: BattleMetrics
 
+# ── 4-Phase Telemetry ──
+var _inactivity_timer: float = 0.0      # Phase 2: counts up when idle, resets on keystroke
+var _last_submit_ms: float = -1.0       # Phase 2: wall-clock ms of last submission
+var _error_log: Array[Dictionary] = []  # Phase 2: accumulated errors (reset after intervention)
+var _is_baseline: bool = true           # Phase 1: true until first submission fires
+
 func _ready() -> void:
 	if Globals.instance != null and Globals.instance.ui_theme != null:
 		theme = Globals.instance.ui_theme
@@ -69,6 +75,13 @@ func _exit_tree() -> void:
 		ApiClient.puzzle_fetched.disconnect(_on_puzzle_fetched)
 
 # ---------------------------------------------------------------------------
+# Phase 2: Telemetry Accumulation — inactivity timer
+# ---------------------------------------------------------------------------
+
+func _process(delta: float) -> void:
+	_inactivity_timer += delta
+
+# ---------------------------------------------------------------------------
 # Keystroke capture
 # ---------------------------------------------------------------------------
 
@@ -107,6 +120,7 @@ func _on_code_editor_input(event: InputEvent) -> void:
 				_metrics.record_paste()
 				return
 	if key.pressed:
+		_inactivity_timer = 0.0  # Phase 2: any keystroke resets idle clock
 		_metrics.record_key_down(key.physical_keycode)
 	else:
 		_metrics.record_key_up(key.physical_keycode)
@@ -116,13 +130,22 @@ func _set_code_font_size(new_size: int) -> void:
 	_code_editor.add_theme_font_size_override("font_size", _code_font_size)
 
 # ---------------------------------------------------------------------------
-# Submit
+# Phase 3: Threshold Evaluation — build and send accumulated payload
 # ---------------------------------------------------------------------------
 
 func _on_submit_pressed() -> void:
 	_attempt_count += 1
 	var code := _code_editor.text
 	var raw_metrics := _metrics.collect()
+
+	# Compute client-side time since last submit
+	var now_ms := float(Time.get_ticks_msec())
+	var time_since_last_submit: float
+	if _last_submit_ms >= 0.0:
+		time_since_last_submit = (now_ms - _last_submit_ms) / 1000.0
+	else:
+		time_since_last_submit = raw_metrics.get("total_time_seconds", 0.0)
+	_last_submit_ms = now_ms
 
 	var payload := {
 		"playerId":       PlayerDataManager.user_id,
@@ -138,8 +161,18 @@ func _on_submit_pressed() -> void:
 			"totalTimeSeconds":    raw_metrics.get("total_time_seconds",  0.0),
 			"pasteDetected":       raw_metrics.get("paste_detected",     false),
 			"rawEvents":           raw_metrics.get("raw_events", []),
+			# ── 4-Phase telemetry fields ──
+			"inactivityDuration":  _inactivity_timer,
+			"timeSinceLastSubmit": time_since_last_submit,
+			"errorLog":            _error_log.duplicate(),
+			"isFirstSubmission":   _is_baseline,
 		},
 	}
+
+	# Phase 1 baseline consumed — all subsequent submissions are Phase 2+
+	_is_baseline = false
+	# Reset inactivity clock: idle tracking starts fresh after each submit
+	_inactivity_timer = 0.0
 	_previous_code = code
 
 	_set_output_text("Submitting...")
@@ -147,8 +180,74 @@ func _on_submit_pressed() -> void:
 	ApiClient.post_submission(payload)
 
 # ---------------------------------------------------------------------------
-# Response handling
+# Phase 4: Targeted Intervention — parse response and route dialogue
 # ---------------------------------------------------------------------------
+
+func _on_submission_completed(data: Dictionary) -> void:
+	var correct: bool            = data.get("isCorrect", false)
+	if not correct:
+		_submit_btn.disabled = false
+
+	var diag_msg: String         = data.get("diagnosticMessage", "")
+	var diag_category: String    = data.get("diagnosticCategory", "")
+	var npc_dialogue: Dictionary = data.get("npcDialogue", {})
+	var intervention_type: String = data.get("interventionType", "None")
+	var is_mastered: bool        = data.get("isMastered", false)
+	var mastery_pct: float       = data.get("masteryProbability", 0.0) * 100.0
+	var xp: int                  = data.get("xpAwarded", 0)
+
+	# Line number from first compiler diagnostic (if any)
+	var compiler_diags: Array = data.get("compilerDiagnostics", [])
+	var line_no: int = compiler_diags[0].get("line", -1) if not compiler_diags.is_empty() else -1
+	var loc := "  (line %d)" % line_no if line_no > 0 else ""
+
+	# ── Correct answer ──
+	if correct:
+		var out := "Correct!    Mastery: %d%%" % int(mastery_pct)
+		if xp > 0:
+			out += "\n+%d XP" % xp
+		_set_output_text(out)
+		if is_mastered:
+			await _show_server_dialogue("Odin", "You've mastered this skill. Well done.", "")
+		await get_tree().create_timer(3.0).timeout
+		_finish_session(true)
+		return
+
+	# ── Incorrect answer ──
+
+	# Phase 2: accumulate this error into the log for future intervention evaluation.
+	# Skip "None" or empty categories (e.g. starter-code guard hits).
+	if not diag_category.is_empty() and diag_category != "None":
+		_error_log.append({ "category": diag_category, "message": diag_msg })
+
+	# Always show the diagnostic message in the output panel.
+	var msg := diag_msg if not diag_msg.is_empty() else "Incorrect."
+	var out := "%s%s" % [msg, loc]
+	if xp > 0:
+		out += "\n+%d XP" % xp
+	_set_output_text(out)
+
+	# Phase 4: route intervention based on server's classification.
+	var dialogue_text: String = npc_dialogue.get("dialogueText", "") if not npc_dialogue.is_empty() else ""
+
+	match intervention_type:
+		"ScaffoldingHint":
+			# Show ODIN dialogue popup, then reset the error accumulation cycle.
+			if not dialogue_text.is_empty():
+				await _show_server_dialogue("Odin", dialogue_text, "")
+			_error_log.clear()  # Intervention delivered — start fresh accumulation
+
+		"Rejection":
+			# GamingTheSystem — popup warning, then clear log (not a genuine attempt).
+			if not dialogue_text.is_empty():
+				await _show_server_dialogue("Odin", dialogue_text, "")
+			_error_log.clear()
+
+		"None", "Reward", _:
+			# HintWithheld, ActiveThinking, or first-submission baseline.
+			# ODIN remains completely silent — productive struggle is preserved.
+			# Output panel already updated above; no popup.
+			pass
 
 func _on_puzzle_fetched(data: Dictionary) -> void:
 	var desc: String = data.get("description", "")
@@ -163,45 +262,6 @@ func _on_session_created(data: Dictionary) -> void:
 	_session_id = str(data.get("id", ""))
 	_submit_btn.disabled = false
 	GameLogger.info("BattleScene: session created id=%s" % _session_id)
-
-func _on_submission_completed(data: Dictionary) -> void:
-	var correct: bool             = data.get("isCorrect", false)
-	if not correct:
-		_submit_btn.disabled = false
-
-	var diag_msg: String          = data.get("diagnosticMessage", "")
-	var _diag_category: String    = data.get("diagnosticCategory", "")
-	var npc_dialogue: Dictionary  = data.get("npcDialogue", {})
-	var is_mastered: bool         = data.get("isMastered", false)
-	var mastery_pct: float        = data.get("masteryProbability", 0.0) * 100.0
-	var xp: int                   = data.get("xpAwarded", 0)
-
-	# Line number from first compiler diagnostic (if any)
-	var compiler_diags: Array = data.get("compilerDiagnostics", [])
-	var line_no: int = compiler_diags[0].get("line", -1) if not compiler_diags.is_empty() else -1
-	var loc := "  (line %d)" % line_no if line_no > 0 else ""
-
-	if correct:
-		var out := "Correct!    Mastery: %d%%" % int(mastery_pct)
-		if xp > 0:
-			out += "\n+%d XP" % xp
-		_set_output_text(out)
-		if is_mastered:
-			await _show_server_dialogue("Odin", "You've mastered this skill. Well done.", "")
-		await get_tree().create_timer(3.0).timeout
-		_finish_session(true)
-		return
-
-	var msg := diag_msg if not diag_msg.is_empty() else "Incorrect."
-	var out := "%s%s" % [msg, loc]
-	if xp > 0:
-		out += "\n+%d XP" % xp
-
-	var dialogue_text: String = npc_dialogue.get("dialogueText", "") if not npc_dialogue.is_empty() else ""
-	if not dialogue_text.is_empty():
-		out += "\n\n" + dialogue_text
-
-	_set_output_text(out)
 
 func _on_request_failed(tag: String, code: int) -> void:
 	match tag:
