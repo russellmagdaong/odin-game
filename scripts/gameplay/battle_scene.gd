@@ -142,7 +142,7 @@ func _on_submit_pressed() -> void:
 	}
 	_previous_code = code
 
-	_output_text.text = "Submitting..."
+	_set_output_text("Submitting...")
 	_submit_btn.disabled = true
 	ApiClient.post_submission(payload)
 
@@ -165,17 +165,16 @@ func _on_session_created(data: Dictionary) -> void:
 	GameLogger.info("BattleScene: session created id=%s" % _session_id)
 
 func _on_submission_completed(data: Dictionary) -> void:
-	var correct: bool              = data.get("isCorrect", false)
+	var correct: bool             = data.get("isCorrect", false)
 	if not correct:
 		_submit_btn.disabled = false
 
-	var diag_msg: String           = data.get("diagnosticMessage", "")
-	var _diag_category: String     = data.get("diagnosticCategory", "")
-	var _intervention_type: String  = data.get("interventionType", "None")
-	var _npc_dialogue: Dictionary   = data.get("npcDialogue", {})
-	var is_mastered: bool          = data.get("isMastered", false)
-	var mastery_pct: float         = data.get("masteryProbability", 0.0) * 100.0
-	var xp: int                    = data.get("xpAwarded", 0)
+	var diag_msg: String          = data.get("diagnosticMessage", "")
+	var _diag_category: String    = data.get("diagnosticCategory", "")
+	var npc_dialogue: Dictionary  = data.get("npcDialogue", {})
+	var is_mastered: bool         = data.get("isMastered", false)
+	var mastery_pct: float        = data.get("masteryProbability", 0.0) * 100.0
+	var xp: int                   = data.get("xpAwarded", 0)
 
 	# Line number from first compiler diagnostic (if any)
 	var compiler_diags: Array = data.get("compilerDiagnostics", [])
@@ -183,9 +182,10 @@ func _on_submission_completed(data: Dictionary) -> void:
 	var loc := "  (line %d)" % line_no if line_no > 0 else ""
 
 	if correct:
-		_output_text.text = "Correct!    Mastery: %d%%" % int(mastery_pct)
+		var out := "Correct!    Mastery: %d%%" % int(mastery_pct)
 		if xp > 0:
-			_output_text.text += "\n+%d XP" % xp
+			out += "\n+%d XP" % xp
+		_set_output_text(out)
 		if is_mastered:
 			await _show_server_dialogue("Odin", "You've mastered this skill. Well done.", "")
 		await get_tree().create_timer(3.0).timeout
@@ -193,18 +193,23 @@ func _on_submission_completed(data: Dictionary) -> void:
 		return
 
 	var msg := diag_msg if not diag_msg.is_empty() else "Incorrect."
-	_output_text.text = "%s%s" % [msg, loc]
-
+	var out := "%s%s" % [msg, loc]
 	if xp > 0:
-		_output_text.text += "\n+%d XP" % xp
+		out += "\n+%d XP" % xp
+
+	var dialogue_text: String = npc_dialogue.get("dialogueText", "") if not npc_dialogue.is_empty() else ""
+	if not dialogue_text.is_empty():
+		out += "\n\n" + dialogue_text
+
+	_set_output_text(out)
 
 func _on_request_failed(tag: String, code: int) -> void:
 	match tag:
 		"submission":
 			_submit_btn.disabled = false
-			_output_text.text = "Could not reach the server. (HTTP %d)\nYour code was not evaluated." % code
+			_set_output_text("Could not reach the server. (HTTP %d)\nYour code was not evaluated." % code)
 		"session_start":
-			_output_text.text = "Could not create session. (HTTP %d)\nSubmitting is disabled." % code
+			_set_output_text("Could not create session. (HTTP %d)\nSubmitting is disabled." % code)
 		"puzzle_fetch":
 			set_problem_text("(Puzzle failed to load — puzzle_id: %s)" % _puzzle_id)
 
@@ -321,6 +326,23 @@ func _load_battle_texture(folder: String, texture_name: String) -> Texture2D:
 		return null
 	var path := "res://assets/battle/%s/%s.png" % [folder, texture_name]
 	return load(path) if ResourceLoader.exists(path) else null
+
+func _set_output_text(text: String) -> void:
+	_output_text.text = text
+	call_deferred("_adjust_output_font_size")
+
+func _adjust_output_font_size() -> void:
+	var scroll := get_node("MarginContainer/ContentSplit/LeftVBox/OutputPanel/OutputMargin/OutputVBox/OutputScroll") as Control
+	var available := scroll.size.y
+	var width := _output_text.size.x
+	if width <= 0 or available <= 0:
+		return
+	var font = _output_text.get_theme_font("font")
+	for f_size in range(24, 7, -1):
+		_output_text.add_theme_font_size_override("font_size", f_size)
+		var text_size = font.get_multiline_string_size(_output_text.text, HORIZONTAL_ALIGNMENT_LEFT, width, f_size)
+		if text_size.y <= available:
+			return
 
 func set_problem_text(text: String) -> void:
 	var label = get_node("%ProblemText")
