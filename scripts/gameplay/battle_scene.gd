@@ -103,6 +103,9 @@ func _on_code_editor_input(event: InputEvent) -> void:
 				_set_code_font_size(CODE_FONT_SIZE_DEFAULT)
 				get_viewport().set_input_as_handled()
 				return
+			KEY_V:
+				_metrics.record_paste()
+				return
 	if key.pressed:
 		_metrics.record_key_down(key.physical_keycode)
 	else:
@@ -133,6 +136,7 @@ func _on_submit_pressed() -> void:
 			"averageDwellTimeMs":  raw_metrics.get("avg_dwell_time_ms",  -1.0),
 			"initialLatencyMs":    raw_metrics.get("initial_latency_ms", -1.0),
 			"totalTimeSeconds":    raw_metrics.get("total_time_seconds",  0.0),
+			"pasteDetected":       raw_metrics.get("paste_detected",     false),
 			"rawEvents":           raw_metrics.get("raw_events", []),
 		},
 	}

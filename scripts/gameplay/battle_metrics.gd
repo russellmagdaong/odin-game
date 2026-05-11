@@ -8,9 +8,13 @@ var _dwell_times: Array[float] = []
 var _flight_times: Array[float] = []
 var _key_down_times: Dictionary = {}
 var _raw_events: Array = []
+var _paste_detected: bool = false
 
 func start() -> void:
 	_load_time_ms = float(Time.get_ticks_msec())
+
+func record_paste() -> void:
+	_paste_detected = true
 
 func record_key_down(keycode: int) -> void:
 	var now := float(Time.get_ticks_msec())
@@ -32,10 +36,11 @@ func record_key_up(keycode: int) -> void:
 func collect() -> Dictionary:
 	var now := float(Time.get_ticks_msec())
 	var result := {
-		"avg_flight_time_ms":  _avg(_flight_times),
-		"avg_dwell_time_ms":   _avg(_dwell_times),
-		"initial_latency_ms":  (_first_key_time_ms - _load_time_ms) if _first_key_time_ms >= 0.0 else -1.0,
-		"total_time_seconds":  (now - _load_time_ms) / 1000.0,
+		"avg_flight_time_ms":    _avg(_flight_times),
+		"avg_dwell_time_ms":     _avg(_dwell_times),
+		"initial_latency_ms":    (_first_key_time_ms - _load_time_ms) if _first_key_time_ms >= 0.0 else -1.0,
+		"total_time_seconds":    (now - _load_time_ms) / 1000.0,
+		"paste_detected":        _paste_detected,
 	}
 	result["raw_events"] = _raw_events.duplicate()
 	# Reset per-attempt buffers so next submission reflects only that attempt's keystrokes.
@@ -44,6 +49,7 @@ func collect() -> Dictionary:
 	_raw_events.clear()
 	_first_key_time_ms = -1.0
 	_last_key_up_ms    = -1.0
+	_paste_detected    = false
 	_load_time_ms      = now
 	return result
 
