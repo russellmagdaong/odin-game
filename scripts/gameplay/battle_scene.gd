@@ -38,6 +38,7 @@ func _ready() -> void:
 		theme = Globals.instance.ui_theme
 
 	_code_editor = get_node("%CodeEditor")
+	_code_editor.context_menu_enabled = false
 	_output_text  = get_node("%OutputText")
 	_submit_btn   = get_node("%SubmitButton")
 	_code_editor.add_theme_font_size_override("font_size", _code_font_size)
@@ -124,7 +125,7 @@ func _on_code_editor_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				if not _submit_btn.disabled:
 					_metrics.record_paste()
-					_on_submit_pressed()
+					_trigger_submission(true)
 				return
 	if key.pressed:
 		_inactivity_timer = 0.0  # Phase 2: any keystroke resets idle clock
@@ -141,6 +142,9 @@ func _set_code_font_size(new_size: int) -> void:
 # ---------------------------------------------------------------------------
 
 func _on_submit_pressed() -> void:
+	_trigger_submission(false)
+
+func _trigger_submission(is_paste: bool) -> void:
 	_attempt_count += 1
 	var code := _code_editor.text
 	var raw_metrics := _metrics.collect()
@@ -182,7 +186,8 @@ func _on_submit_pressed() -> void:
 	_inactivity_timer = 0.0
 	_previous_code = code
 
-	_set_output_text("Submitting...")
+	if not is_paste:
+		_set_output_text("Submitting...")
 	_submit_btn.disabled = true
 	ApiClient.post_submission(payload)
 
@@ -227,12 +232,15 @@ func _on_submission_completed(data: Dictionary) -> void:
 	if not diag_category.is_empty() and diag_category != "None":
 		_error_log.append({ "category": diag_category, "message": diag_msg })
 
-	# Always show the diagnostic message in the output panel.
-	var msg := diag_msg if not diag_msg.is_empty() else "Incorrect."
-	var out := "%s%s" % [msg, loc]
-	if xp > 0:
-		out += "\n+%d XP" % xp
-	_set_output_text(out)
+	# Always show the diagnostic message in the output panel, EXCEPT for Rejections (e.g. paste blocks)
+	if intervention_type != "Rejection":
+		var msg := diag_msg if not diag_msg.is_empty() else "Incorrect."
+		var out := "%s%s" % [msg, loc]
+		if xp > 0:
+			out += "\n+%d XP" % xp
+		_set_output_text(out)
+	else:
+		_set_output_text("") # Clear output silently for pastes/gaming
 
 	# Phase 4: route intervention based on server's classification.
 	var dialogue_text: String = npc_dialogue.get("dialogueText", "") if not npc_dialogue.is_empty() else ""
