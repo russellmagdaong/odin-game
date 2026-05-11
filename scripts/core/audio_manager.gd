@@ -69,10 +69,9 @@ func play_music(track: String) -> void:
 		var stream: AudioStream = load(_MUSIC[track])
 		stream.set("loop", true)
 		_music_player.stream = stream
-		_music_player.volume_db = -80.0
+		_music_player.volume_db = 0.0  # Start at full volume — no fade-in
 		_music_player.play()
 	)
-	_fade_tween.tween_property(_music_player, "volume_db", 0.0, FADE_DURATION)
 
 func play_music_for_level(level_name: String) -> void:
 	if level_name.is_empty():
