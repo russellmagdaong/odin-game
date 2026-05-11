@@ -121,7 +121,10 @@ func _on_code_editor_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				return
 			KEY_V:
-				_metrics.record_paste()
+				get_viewport().set_input_as_handled()
+				if not _submit_btn.disabled:
+					_metrics.record_paste()
+					_on_submit_pressed()
 				return
 	if key.pressed:
 		_inactivity_timer = 0.0  # Phase 2: any keystroke resets idle clock
