@@ -333,6 +333,8 @@ func _should_show_hint(text: String) -> bool:
 		return false
 	if normalized.to_lower() == "no additional hints available.":
 		return false
+	if normalized.to_lower() == "no hints available for this puzzle.":
+		return false
 	return not _unlocked_hints.has(normalized)
 
 func _on_puzzle_fetched(data: Dictionary) -> void:
