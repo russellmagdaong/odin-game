@@ -22,7 +22,17 @@ func _ready() -> void:
 func _on_request_pressed() -> void:
 	request_hint_requested.emit()
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if visible and not get_global_rect().has_point(event.global_position):
+			hide()
+			close_requested.emit()
+
 func add_hint(text: String) -> void:
+	if _hints_list.get_child_count() > 0:
+		var separator := HSeparator.new()
+		_hints_list.add_child(separator)
+		
 	var label := Label.new()
 	label.text = text
 	label.autowrap_mode = 2 # AUTOWRAP_WORD
