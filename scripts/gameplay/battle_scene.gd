@@ -35,8 +35,6 @@ var _is_baseline: bool = true           # Phase 1: true until first submission f
 # Post-error idle: wall ms when server returned an error; first key after that (for HBDA post-error inactivity)
 var _error_feedback_ms: float = -1.0
 var _first_key_after_error_ms: float = -1.0
-var _paste_pending: bool = false
-var _last_text_len_for_paste: int = 0
 var _battle_start_ms: float = 0.0
 
 # Comment lines in starter code are wrapped to this width (chars) so they
@@ -80,7 +78,6 @@ func _ready() -> void:
 	_metrics.start()
 
 	_code_editor.gui_input.connect(_on_code_editor_input)
-	_code_editor.text_changed.connect(_on_code_text_changed)
 	ApiClient.submission_completed.connect(_on_submission_completed)
 	ApiClient.session_created.connect(_on_session_created)
 	ApiClient.request_failed.connect(_on_request_failed)
@@ -92,8 +89,6 @@ func _ready() -> void:
 	_battle_start_ms = float(Time.get_ticks_msec())
 
 func _exit_tree() -> void:
-	if _code_editor != null and _code_editor.text_changed.is_connected(_on_code_text_changed):
-		_code_editor.text_changed.disconnect(_on_code_text_changed)
 	if ApiClient.submission_completed.is_connected(_on_submission_completed):
 		ApiClient.submission_completed.disconnect(_on_submission_completed)
 	if ApiClient.session_created.is_connected(_on_session_created):
@@ -102,12 +97,6 @@ func _exit_tree() -> void:
 		ApiClient.request_failed.disconnect(_on_request_failed)
 	if ApiClient.puzzle_fetched.is_connected(_on_puzzle_fetched):
 		ApiClient.puzzle_fetched.disconnect(_on_puzzle_fetched)
-
-func _on_code_text_changed() -> void:
-	var l := _code_editor.text.length()
-	if l - _last_text_len_for_paste > 25:
-		_paste_pending = true
-	_last_text_len_for_paste = l
 
 # ---------------------------------------------------------------------------
 # Phase 2: Telemetry Accumulation — inactivity timer
@@ -152,7 +141,6 @@ func _on_code_editor_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				return
 			KEY_V:
-				_paste_pending = true
 				get_viewport().set_input_as_handled()
 				_show_paste_disabled_dialogue()
 				return
@@ -199,9 +187,7 @@ func _trigger_submission(is_paste: bool, is_hint_request: bool = false) -> void:
 
 	_attempt_count += 1
 	var code := _code_editor.text
-	var paste_flag := is_paste or _paste_pending
-	var raw_metrics := _metrics.collect(_starter_code, code, paste_flag)
-	_paste_pending = false
+	var raw_metrics := _metrics.collect(_starter_code, code, false)
 
 	# Compute client-side time since last submit
 	var time_since_last_submit: float
@@ -223,7 +209,7 @@ func _trigger_submission(is_paste: bool, is_hint_request: bool = false) -> void:
 			"averageDwellTimeMs":  raw_metrics.get("avg_dwell_time_ms",  -1.0),
 			"initialLatencyMs":    raw_metrics.get("initial_latency_ms", -1.0),
 			"totalTimeSeconds":    raw_metrics.get("total_time_seconds",  0.0),
-			"pasteDetected":       raw_metrics.get("paste_detected", false),
+			"pasteDetected":       false,
 			"rawEvents":           raw_metrics.get("raw_events", []),
 			# ── 4-Phase telemetry fields ──
 			"inactivityDuration":  _inactivity_timer,
@@ -361,7 +347,6 @@ func _on_puzzle_fetched(data: Dictionary) -> void:
 		_starter_code = code
 		_code_editor.text = _wrap_starter_comments(code)
 		_code_editor.set_caret_line(_code_editor.get_line_count() - 1)
-		_last_text_len_for_paste = _code_editor.text.length()
 
 # Wraps only comment lines (// ...) in starter code that exceed COMMENT_WRAP_WIDTH.
 # Code lines are left exactly as-is to preserve correct indentation and syntax.
@@ -443,9 +428,6 @@ func _finish_session(_completed: bool) -> void:
 		ApiClient.request_failed.disconnect(_on_request_failed)
 	if ApiClient.puzzle_fetched.is_connected(_on_puzzle_fetched):
 		ApiClient.puzzle_fetched.disconnect(_on_puzzle_fetched)
-	if _code_editor != null and _code_editor.text_changed.is_connected(_on_code_text_changed):
-		_code_editor.text_changed.disconnect(_on_code_text_changed)
-
 	if not _session_id.is_empty():
 		var now_ms := float(Time.get_ticks_msec())
 		var pe := -1.0
