@@ -8,26 +8,12 @@ var _dwell_times: Array[float] = []
 var _flight_times: Array[float] = []
 var _key_down_times: Dictionary = {}
 var _raw_events: Array = []
-var _paste_detected: bool = false
-var _last_paste_ms: float = -1.0
-var _last_paste_char_count: int = 0
-var _key_down_count: int = 0
-var _key_down_count_at_last_paste: int = 0
 
 func start() -> void:
 	_load_time_ms = float(Time.get_ticks_msec())
 
-func record_paste(pasted_text: String = "") -> void:
-	var now := float(Time.get_ticks_msec())
-	_paste_detected = true
-	_last_paste_ms = now
-	_last_paste_char_count = pasted_text.length()
-	_key_down_count_at_last_paste = _key_down_count
-	_raw_events.append([int(now), 0, 2, _last_paste_char_count])
-
 func record_key_down(keycode: int) -> void:
 	var now := float(Time.get_ticks_msec())
-	_key_down_count += 1
 	if _first_key_time_ms < 0.0:
 		_first_key_time_ms = now
 	if _last_key_up_ms >= 0.0:
@@ -45,18 +31,12 @@ func record_key_up(keycode: int) -> void:
 
 func collect() -> Dictionary:
 	var now := float(Time.get_ticks_msec())
-	var seconds_since_paste := -1.0
-	if _last_paste_ms >= 0.0:
-		seconds_since_paste = (now - _last_paste_ms) / 1000.0
 	var result := {
 		"avg_flight_time_ms":    _avg(_flight_times),
 		"avg_dwell_time_ms":     _avg(_dwell_times),
 		"initial_latency_ms":    (_first_key_time_ms - _load_time_ms) if _first_key_time_ms >= 0.0 else -1.0,
 		"total_time_seconds":    (now - _load_time_ms) / 1000.0,
-		"paste_detected":        _paste_detected,
-		"seconds_since_paste":   seconds_since_paste,
-		"pasted_char_count":     _last_paste_char_count,
-		"key_downs_since_paste": max(0, _key_down_count - _key_down_count_at_last_paste),
+		"paste_detected":        false,
 	}
 	result["raw_events"] = _raw_events.duplicate()
 	# Reset per-attempt buffers so next submission reflects only that attempt's keystrokes.
@@ -65,11 +45,6 @@ func collect() -> Dictionary:
 	_raw_events.clear()
 	_first_key_time_ms = -1.0
 	_last_key_up_ms    = -1.0
-	_paste_detected    = false
-	_last_paste_ms     = -1.0
-	_last_paste_char_count = 0
-	_key_down_count    = 0
-	_key_down_count_at_last_paste = 0
 	_load_time_ms      = now
 	return result
 

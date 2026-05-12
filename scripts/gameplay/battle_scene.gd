@@ -35,9 +35,7 @@ var _is_baseline: bool = true           # Phase 1: true until first submission f
 # Comment lines in starter code are wrapped to this width (chars) so they
 # fit in the CodeEdit at default zoom (font size 20) without horizontal scroll.
 const COMMENT_WRAP_WIDTH: int = 52
-const BULK_PASTE_MIN_CHARS: int = 40
-const PASTE_SUBMIT_MAX_SECONDS: float = 2.0
-const PASTE_SUBMIT_MAX_KEYDOWNS: int = 8
+const PASTE_DISABLED_DIALOGUE: String = "Copy-pasting is disabled here. If you're copying a line, are you sure that we have to? Try typing the idea yourself, or look for a shorter pattern like one declaration or a loop."
 
 func _ready() -> void:
 	if Globals.instance != null and Globals.instance.ui_theme != null:
@@ -138,8 +136,8 @@ func _on_code_editor_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				return
 			KEY_V:
-				if not _submit_btn.disabled:
-					_metrics.record_paste(DisplayServer.clipboard_get())
+				get_viewport().set_input_as_handled()
+				_show_paste_disabled_dialogue()
 				return
 	if key.pressed:
 		_inactivity_timer = 0.0  # Phase 2: any keystroke resets idle clock
@@ -175,7 +173,6 @@ func _trigger_submission(is_paste: bool, is_hint_request: bool = false) -> void:
 	_attempt_count += 1
 	var code := _code_editor.text
 	var raw_metrics := _metrics.collect()
-	var is_paste_then_submit := _is_bulk_paste_then_submit(raw_metrics, code)
 
 	# Compute client-side time since last submit
 	var now_ms := float(Time.get_ticks_msec())
@@ -198,7 +195,7 @@ func _trigger_submission(is_paste: bool, is_hint_request: bool = false) -> void:
 			"averageDwellTimeMs":  raw_metrics.get("avg_dwell_time_ms",  -1.0),
 			"initialLatencyMs":    raw_metrics.get("initial_latency_ms", -1.0),
 			"totalTimeSeconds":    raw_metrics.get("total_time_seconds",  0.0),
-			"pasteDetected":       is_paste_then_submit,
+			"pasteDetected":       false,
 			"rawEvents":           raw_metrics.get("raw_events", []),
 			# ── 4-Phase telemetry fields ──
 			"inactivityDuration":  _inactivity_timer,
@@ -222,42 +219,8 @@ func _trigger_submission(is_paste: bool, is_hint_request: bool = false) -> void:
 	_submit_btn.disabled = true
 	ApiClient.post_submission(payload)
 
-func _is_bulk_paste_then_submit(raw_metrics: Dictionary, code: String) -> bool:
-	if not raw_metrics.get("paste_detected", false):
-		return false
-
-	var pasted_chars: int = int(raw_metrics.get("pasted_char_count", 0))
-	var seconds_since_paste: float = float(raw_metrics.get("seconds_since_paste", -1.0))
-	var key_downs_since_paste: int = int(raw_metrics.get("key_downs_since_paste", 0))
-
-	if pasted_chars < BULK_PASTE_MIN_CHARS:
-		return false
-	if seconds_since_paste < 0.0 or seconds_since_paste > PASTE_SUBMIT_MAX_SECONDS:
-		return false
-	if key_downs_since_paste > PASTE_SUBMIT_MAX_KEYDOWNS:
-		return false
-
-	var normalized_code := _normalize_code_for_comparison(code)
-	if normalized_code.is_empty():
-		return false
-
-	var normalized_starter := _normalize_code_for_comparison(_starter_code)
-	var normalized_wrapped_starter := _normalize_code_for_comparison(_wrap_starter_comments(_starter_code))
-	var normalized_previous := _normalize_code_for_comparison(_previous_code)
-
-	# Copying starter text or the student's own earlier work inside this task is not
-	# treated as external-answer insertion.
-	if not normalized_starter.is_empty() and normalized_code == normalized_starter:
-		return false
-	if not normalized_wrapped_starter.is_empty() and normalized_code == normalized_wrapped_starter:
-		return false
-	if not normalized_previous.is_empty() and normalized_code == normalized_previous:
-		return false
-
-	return true
-
-func _normalize_code_for_comparison(code: String) -> String:
-	return code.replace("\r\n", "\n").replace("\r", "\n").strip_edges()
+func _show_paste_disabled_dialogue() -> void:
+	_show_server_dialogue("Odin", PASTE_DISABLED_DIALOGUE, "")
 
 # ---------------------------------------------------------------------------
 # Phase 4: Targeted Intervention — parse response and route dialogue
