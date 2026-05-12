@@ -47,7 +47,10 @@ func post_session_start(payload: Dictionary) -> void:
 	_enqueue(HTTPClient.METHOD_POST, "/api/session", payload, "session_start")
 
 func patch_session_end(session_id: String) -> void:
-	_enqueue(HTTPClient.METHOD_PATCH, "/api/session/" + session_id + "/end", {}, "session_end")
+	_enqueue(HTTPClient.METHOD_PATCH, "/api/session/" + session_id + "/end", {}, "session_patch_end")
+
+func post_session_end_telemetry(payload: Dictionary) -> void:
+	_enqueue(HTTPClient.METHOD_POST, "/api/submission", payload, "session_end_telemetry")
 
 func get_puzzle(puzzle_id: String) -> void:
 	_enqueue(HTTPClient.METHOD_GET, "/api/puzzle/" + puzzle_id, {}, "puzzle_fetch")
@@ -141,6 +144,8 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 					)
 		"puzzle_fetch":
 			puzzle_fetched.emit(data)
+		"session_end_telemetry":
+			pass
 		"game_state_load":
 			var raw := str(data.get("gameState", "{}"))
 			var json2 := JSON.new()

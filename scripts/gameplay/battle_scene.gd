@@ -32,6 +32,13 @@ var _last_submit_ms: float = -1.0       # Phase 2: wall-clock ms of last submiss
 var _error_log: Array[Dictionary] = []  # Phase 2: accumulated errors (reset after intervention)
 var _is_baseline: bool = true           # Phase 1: true until first submission fires
 
+# Post-error idle: wall ms when server returned an error; first key after that (for HBDA post-error inactivity)
+var _error_feedback_ms: float = -1.0
+var _first_key_after_error_ms: float = -1.0
+var _paste_pending: bool = false
+var _last_text_len_for_paste: int = 0
+var _battle_start_ms: float = 0.0
+
 # Comment lines in starter code are wrapped to this width (chars) so they
 # fit in the CodeEdit at default zoom (font size 20) without horizontal scroll.
 const COMMENT_WRAP_WIDTH: int = 52
@@ -73,6 +80,7 @@ func _ready() -> void:
 	_metrics.start()
 
 	_code_editor.gui_input.connect(_on_code_editor_input)
+	_code_editor.text_changed.connect(_on_code_text_changed)
 	ApiClient.submission_completed.connect(_on_submission_completed)
 	ApiClient.session_created.connect(_on_session_created)
 	ApiClient.request_failed.connect(_on_request_failed)
@@ -81,8 +89,11 @@ func _ready() -> void:
 	if not _puzzle_id.is_empty():
 		ApiClient.get_puzzle(_puzzle_id)
 	_post_session_start()
+	_battle_start_ms = float(Time.get_ticks_msec())
 
 func _exit_tree() -> void:
+	if _code_editor != null and _code_editor.text_changed.is_connected(_on_code_text_changed):
+		_code_editor.text_changed.disconnect(_on_code_text_changed)
 	if ApiClient.submission_completed.is_connected(_on_submission_completed):
 		ApiClient.submission_completed.disconnect(_on_submission_completed)
 	if ApiClient.session_created.is_connected(_on_session_created):
@@ -91,6 +102,12 @@ func _exit_tree() -> void:
 		ApiClient.request_failed.disconnect(_on_request_failed)
 	if ApiClient.puzzle_fetched.is_connected(_on_puzzle_fetched):
 		ApiClient.puzzle_fetched.disconnect(_on_puzzle_fetched)
+
+func _on_code_text_changed() -> void:
+	var l := _code_editor.text.length()
+	if l - _last_text_len_for_paste > 25:
+		_paste_pending = true
+	_last_text_len_for_paste = l
 
 # ---------------------------------------------------------------------------
 # Phase 2: Telemetry Accumulation — inactivity timer
@@ -135,11 +152,14 @@ func _on_code_editor_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				return
 			KEY_V:
+				_paste_pending = true
 				get_viewport().set_input_as_handled()
 				_show_paste_disabled_dialogue()
 				return
 	if key.pressed:
 		_inactivity_timer = 0.0  # Phase 2: any keystroke resets idle clock
+		if _error_feedback_ms >= 0.0 and _first_key_after_error_ms < 0.0:
+			_first_key_after_error_ms = float(Time.get_ticks_msec())
 		_metrics.record_key_down(key.physical_keycode)
 	else:
 		_metrics.record_key_up(key.physical_keycode)
@@ -169,12 +189,21 @@ func _on_request_hint_requested() -> void:
 	_trigger_submission(false, true)
 
 func _trigger_submission(is_paste: bool, is_hint_request: bool = false) -> void:
+	var now_ms := float(Time.get_ticks_msec())
+	var post_err := -1.0
+	if _error_feedback_ms >= 0.0:
+		if _first_key_after_error_ms >= 0.0:
+			post_err = (_first_key_after_error_ms - _error_feedback_ms) / 1000.0
+		else:
+			post_err = (now_ms - _error_feedback_ms) / 1000.0
+
 	_attempt_count += 1
 	var code := _code_editor.text
-	var raw_metrics := _metrics.collect()
+	var paste_flag := is_paste or _paste_pending
+	var raw_metrics := _metrics.collect(_starter_code, code, paste_flag)
+	_paste_pending = false
 
 	# Compute client-side time since last submit
-	var now_ms := float(Time.get_ticks_msec())
 	var time_since_last_submit: float
 	if _last_submit_ms >= 0.0:
 		time_since_last_submit = (now_ms - _last_submit_ms) / 1000.0
@@ -194,13 +223,18 @@ func _trigger_submission(is_paste: bool, is_hint_request: bool = false) -> void:
 			"averageDwellTimeMs":  raw_metrics.get("avg_dwell_time_ms",  -1.0),
 			"initialLatencyMs":    raw_metrics.get("initial_latency_ms", -1.0),
 			"totalTimeSeconds":    raw_metrics.get("total_time_seconds",  0.0),
-			"pasteDetected":       false,
+			"pasteDetected":       raw_metrics.get("paste_detected", false),
 			"rawEvents":           raw_metrics.get("raw_events", []),
 			# ── 4-Phase telemetry fields ──
 			"inactivityDuration":  _inactivity_timer,
 			"timeSinceLastSubmit": time_since_last_submit,
 			"errorLog":            _error_log.duplicate(),
 			"isFirstSubmission":   _is_baseline,
+			"typingBurstCoverage": raw_metrics.get("typingBurstCoverage", 0.0),
+			"selfCorrectionCount": int(raw_metrics.get("selfCorrectionCount", 0)),
+			"systemCheckCount":    int(raw_metrics.get("systemCheckCount", 0)),
+			"postErrorInactivitySeconds": post_err,
+			"keyDownCount":        int(raw_metrics.get("keyDownCount", 0)),
 		},
 		"isHintRequest": is_hint_request,
 	}
@@ -245,6 +279,8 @@ func _on_submission_completed(data: Dictionary) -> void:
 
 	# ── Correct answer ──
 	if correct:
+		_error_feedback_ms = -1.0
+		_first_key_after_error_ms = -1.0
 		var out := "Correct!    Mastery: %d%%" % int(mastery_pct)
 		if xp > 0:
 			out += "\n+%d XP" % xp
@@ -271,6 +307,13 @@ func _on_submission_completed(data: Dictionary) -> void:
 		_set_output_text(out)
 	else:
 		_set_output_text("") # Clear output silently for pastes/gaming
+
+	if intervention_type != "Rejection" and not diag_category.is_empty() and diag_category != "None":
+		_error_feedback_ms = float(Time.get_ticks_msec())
+		_first_key_after_error_ms = -1.0
+	elif intervention_type == "Rejection":
+		_error_feedback_ms = float(Time.get_ticks_msec())
+		_first_key_after_error_ms = -1.0
 
 	# Phase 4: route intervention based on server's classification.
 	var dialogue_text: String = npc_dialogue.get("dialogueText", "") if not npc_dialogue.is_empty() else ""
@@ -318,6 +361,7 @@ func _on_puzzle_fetched(data: Dictionary) -> void:
 		_starter_code = code
 		_code_editor.text = _wrap_starter_comments(code)
 		_code_editor.set_caret_line(_code_editor.get_line_count() - 1)
+		_last_text_len_for_paste = _code_editor.text.length()
 
 # Wraps only comment lines (// ...) in starter code that exceed COMMENT_WRAP_WIDTH.
 # Code lines are left exactly as-is to preserve correct indentation and syntax.
@@ -399,8 +443,46 @@ func _finish_session(_completed: bool) -> void:
 		ApiClient.request_failed.disconnect(_on_request_failed)
 	if ApiClient.puzzle_fetched.is_connected(_on_puzzle_fetched):
 		ApiClient.puzzle_fetched.disconnect(_on_puzzle_fetched)
+	if _code_editor != null and _code_editor.text_changed.is_connected(_on_code_text_changed):
+		_code_editor.text_changed.disconnect(_on_code_text_changed)
 
 	if not _session_id.is_empty():
+		var now_ms := float(Time.get_ticks_msec())
+		var pe := -1.0
+		if _error_feedback_ms >= 0.0:
+			if _first_key_after_error_ms >= 0.0:
+				pe = (_first_key_after_error_ms - _error_feedback_ms) / 1000.0
+			else:
+				pe = (now_ms - _error_feedback_ms) / 1000.0
+		var total_sec := (now_ms - _battle_start_ms) / 1000.0 if _battle_start_ms > 0.0 else 0.0
+		var tsl := (now_ms - _last_submit_ms) / 1000.0 if _last_submit_ms >= 0.0 else 0.0
+		ApiClient.post_session_end_telemetry({
+			"playerId": PlayerDataManager.user_id,
+			"sessionId": _session_id,
+			"puzzleId": _puzzle_id,
+			"skillType": _skill_type,
+			"sourceCode": "",
+			"hintUsageCount": _hint_count,
+			"isSessionEndTelemetry": true,
+			"isHintRequest": false,
+			"keystrokeData": {
+				"averageFlightTimeMs": -1.0,
+				"averageDwellTimeMs": -1.0,
+				"initialLatencyMs": -1.0,
+				"totalTimeSeconds": total_sec,
+				"pasteDetected": false,
+				"rawEvents": [],
+				"inactivityDuration": _inactivity_timer,
+				"timeSinceLastSubmit": tsl,
+				"errorLog": _error_log.duplicate(),
+				"isFirstSubmission": false,
+				"typingBurstCoverage": 0.0,
+				"selfCorrectionCount": 0,
+				"systemCheckCount": 0,
+				"postErrorInactivitySeconds": pe,
+				"keyDownCount": 0,
+			},
+		})
 		ApiClient.patch_session_end(_session_id)
 	SceneManager.end_battle()
 
