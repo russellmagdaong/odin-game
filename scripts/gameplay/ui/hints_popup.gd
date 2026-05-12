@@ -5,17 +5,11 @@ signal request_hint_requested
 
 @onready var _hints_list: VBoxContainer = $PanelContainer/VBoxContainer/ScrollContainer/HintsList
 @onready var _request_button: Button = $PanelContainer/VBoxContainer/ButtonRow/RequestButton
-@onready var _close_button: Button = $PanelContainer/VBoxContainer/ButtonRow/CloseButton
-
 func _ready() -> void:
 	_request_button.pressed.connect(_on_request_pressed)
 
 func _on_request_pressed() -> void:
 	request_hint_requested.emit()
-
-func _on_close_pressed() -> void:
-	close_requested.emit()
-	hide()
 
 func add_hint(text: String) -> void:
 	var label := Label.new()
