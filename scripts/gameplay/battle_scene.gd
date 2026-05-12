@@ -57,7 +57,6 @@ func _ready() -> void:
 		hint_btn.hint_requested.connect(_on_hint_pressed)
 
 	_hints_popup = get_node("HintsPopup")
-	_hints_popup.set_anchors_preset(Control.PRESET_CENTER)
 	_hints_popup.close_requested.connect(_on_hints_popup_close_requested)
 	_hints_popup.request_hint_requested.connect(_on_request_hint_requested)
 	_hints_popup.hide()
@@ -279,7 +278,7 @@ func _on_submission_completed(data: Dictionary) -> void:
 	match intervention_type:
 		"ScaffoldingHint":
 			# Show ODIN dialogue popup, then reset the error accumulation cycle.
-			if not dialogue_text.is_empty():
+			if _should_show_hint(dialogue_text):
 				await _show_server_dialogue("Odin", dialogue_text, "")
 				_unlocked_hints.append(dialogue_text)
 				_hints_popup.add_hint(dialogue_text)
@@ -301,6 +300,14 @@ func _on_submission_completed(data: Dictionary) -> void:
 			# ODIN remains completely silent — productive struggle is preserved.
 			# Output panel already updated above; no popup.
 			pass
+
+func _should_show_hint(text: String) -> bool:
+	var normalized := text.strip_edges()
+	if normalized.is_empty():
+		return false
+	if normalized.to_lower() == "no additional hints available.":
+		return false
+	return not _unlocked_hints.has(normalized)
 
 func _on_puzzle_fetched(data: Dictionary) -> void:
 	var desc: String = data.get("description", "")

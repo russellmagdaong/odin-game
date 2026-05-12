@@ -50,8 +50,6 @@ func _try_dev_boot() -> void:
 
 func set_enemy_approaching(value: bool) -> void:
 	is_enemy_approaching = value
-	if value:
-		AudioManager.play_music("battle")
 
 func change_level(level_name: int = Enums.LevelName.Level0, trigger: int = 0, tile_offset: int = 0, spawn: bool = false) -> void:
 	if is_changing:
@@ -197,7 +195,6 @@ func start_battle(enemy: Node) -> void:
 	battle_enemy = enemy
 	is_battling = true
 	is_enemy_approaching = false
-	AudioManager.play_music("battle")
 
 	await fade_out()
 

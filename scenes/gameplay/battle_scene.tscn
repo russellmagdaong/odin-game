@@ -191,7 +191,7 @@ theme_override_constants/separation = 0
 [node name="OutputTitle" type="Label" parent="MarginContainer/ContentSplit/LeftVBox/OutputPanel/OutputMargin/OutputVBox" unique_id=200000022]
 layout_mode = 2
 theme_override_constants/paragraph_spacing = -24
-text = "ODIN:
+text = "OUTPUT:
 "
 
 [node name="OutputScroll" type="ScrollContainer" parent="MarginContainer/ContentSplit/LeftVBox/OutputPanel/OutputMargin/OutputVBox" unique_id=200000023]
@@ -304,16 +304,12 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_ccfqx")
 text = "HINTS"
 
 [node name="HintsPopup" parent="." unique_id=783192178 instance=ExtResource("11_qaiw1")]
-z_index = 20
-layout_mode = 0
-anchors_preset = 0
-anchor_left = 0.0
-anchor_top = 0.0
-anchor_right = 0.0
-anchor_bottom = 0.0
-offset_left = 416.0
-offset_top = 200.0
-offset_right = 560.0
-offset_bottom = 308.0
+custom_minimum_size = Vector2(600, 400)
+layout_mode = 1
+offset_left = -300.0
+offset_top = -200.0
+offset_right = 300.0
+offset_bottom = 200.0
 grow_horizontal = 1
 grow_vertical = 1
+popup_size = Vector2(600, 400)
