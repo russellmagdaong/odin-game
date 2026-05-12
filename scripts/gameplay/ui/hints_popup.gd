@@ -22,10 +22,10 @@ func _ready() -> void:
 func _on_request_pressed() -> void:
 	request_hint_requested.emit()
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if visible and not get_global_rect().has_point(event.global_position):
-			hide()
+			call_deferred("hide")
 			close_requested.emit()
 
 func add_hint(text: String) -> void:
@@ -43,6 +43,15 @@ func add_hint(text: String) -> void:
 func clear_hints() -> void:
 	for child in _hints_list.get_children():
 		child.queue_free()
+
+func show_no_hints_message() -> void:
+	clear_hints()
+	var label := Label.new()
+	label.text = "No hints available."
+	label.autowrap_mode = 2
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.custom_minimum_size.x = _hint_text_width()
+	_hints_list.add_child(label)
 
 func _apply_popup_size() -> void:
 	if not is_inside_tree() or _panel_container == null:

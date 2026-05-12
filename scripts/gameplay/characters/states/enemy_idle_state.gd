@@ -69,6 +69,7 @@ func _process(_delta: float) -> void:
 
 	_vision_ray.force_raycast_update()
 	if _vision_ray.is_colliding() and _vision_ray.get_collider() is Player:
+		AudioManager.play_music("battle")
 		enemy.state_machine.change_state("Alert")
 
 func _trigger_final_boss_battle(enemy: Enemy) -> void:

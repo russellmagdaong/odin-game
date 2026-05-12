@@ -167,6 +167,8 @@ func _on_hint_pressed() -> void:
 	if _hints_popup.visible:
 		_hints_popup.hide()
 	else:
+		if _unlocked_hints.is_empty():
+			_hints_popup.show_no_hints_message()
 		_hints_popup.show()
 
 func _on_hints_popup_close_requested() -> void:
