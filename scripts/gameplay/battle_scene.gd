@@ -314,12 +314,7 @@ func _on_submission_completed(data: Dictionary) -> void:
 			_error_log.clear()  # Intervention delivered — start fresh accumulation
 
 		"Rejection":
-			# GamingTheSystem — popup warning, then clear log (not a genuine attempt).
-			if not _starter_code.is_empty():
-				_code_editor.text = _wrap_starter_comments(_starter_code)
-			else:
-				_code_editor.text = "" # Fallback to clear
-			_code_editor.set_caret_line(_code_editor.get_line_count() - 1)
+			# GamingTheSystem — popup warning only. Do not clear or replace the student's code.
 			if not dialogue_text.is_empty():
 				await _show_server_dialogue("Odin", dialogue_text, "")
 			_error_log.clear()

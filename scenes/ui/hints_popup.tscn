@@ -24,7 +24,6 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = ExtResource("1_x8t7h")
 script = ExtResource("1_vq8wp")
-popup_size = Vector2(10, 10)
 
 [node name="PanelContainer" type="PanelContainer" parent="." unique_id=238219743]
 custom_minimum_size = Vector2(600, 400)
@@ -43,11 +42,14 @@ horizontal_alignment = 1
 
 [node name="ScrollContainer" type="ScrollContainer" parent="PanelContainer/VBoxContainer" unique_id=840148047]
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
 theme = ExtResource("3_1i2ay")
 
 [node name="HintsList" type="VBoxContainer" parent="PanelContainer/VBoxContainer/ScrollContainer" unique_id=1336691358]
 layout_mode = 2
+custom_minimum_size = Vector2(552, 0)
+size_flags_horizontal = 3
 
 [node name="ButtonRow" type="HBoxContainer" parent="PanelContainer/VBoxContainer" unique_id=475156813]
 layout_mode = 2

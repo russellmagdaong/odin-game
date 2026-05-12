@@ -10,6 +10,7 @@ signal request_hint_requested
 		_apply_popup_size()
 
 @onready var _panel_container: PanelContainer = $PanelContainer
+@onready var _scroll_container: ScrollContainer = $PanelContainer/VBoxContainer/ScrollContainer
 @onready var _hints_list: VBoxContainer = $PanelContainer/VBoxContainer/ScrollContainer/HintsList
 @onready var _request_button: Button = $PanelContainer/VBoxContainer/ButtonRow/RequestButton
 
@@ -26,6 +27,7 @@ func add_hint(text: String) -> void:
 	label.text = text
 	label.autowrap_mode = 2 # AUTOWRAP_WORD
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.custom_minimum_size.x = _hint_text_width()
 	_hints_list.add_child(label)
 	
 func clear_hints() -> void:
@@ -41,6 +43,13 @@ func _apply_popup_size() -> void:
 	size = resolved_size
 	_panel_container.custom_minimum_size = resolved_size
 	_panel_container.size = resolved_size
+	_scroll_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_hints_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_hints_list.custom_minimum_size.x = _hint_text_width()
+	for child in _hints_list.get_children():
+		if child is Control:
+			child.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			child.custom_minimum_size.x = _hint_text_width()
 
 	set_anchors_preset(Control.PRESET_CENTER, false)
 	offset_left = -resolved_size.x * 0.5
@@ -62,3 +71,7 @@ func _get_resolved_popup_size() -> Vector2:
 		return size
 
 	return Vector2(300, 200)
+
+func _hint_text_width() -> float:
+	var resolved_size := _get_resolved_popup_size()
+	return maxf(160.0, resolved_size.x - 48.0)

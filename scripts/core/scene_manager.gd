@@ -195,6 +195,7 @@ func start_battle(enemy: Node) -> void:
 	battle_enemy = enemy
 	is_battling = true
 	is_enemy_approaching = false
+	AudioManager.play_music("battle")
 
 	await fade_out()
 
