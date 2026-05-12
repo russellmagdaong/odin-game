@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bs4h6sys7lcms"]
+
+[ext_resource type="Script" uid="uid://be2ypbi7kvxct" path="res://scripts/gameplay/ui/hint_button.gd" id="1_xrhil"]
+
+[node name="HintButton" type="Button" unique_id=325701175]
+script = ExtResource("1_xrhil")

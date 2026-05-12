@@ -3,6 +3,8 @@ extends Control
 var _code_editor: CodeEdit
 var _output_text: Label
 var _submit_btn: Button
+var _hints_popup: Panel
+var _unlocked_hints: Array[String] = []
 
 const PLAYER_SPRITE_HEIGHT = 150.0
 const ENEMY_SPRITE_HEIGHT = 200.0
@@ -46,7 +48,17 @@ func _ready() -> void:
 	# Disabled until the server confirms the session was created.
 	_submit_btn.disabled = true
 	_submit_btn.pressed.connect(_on_submit_pressed)
-	get_node("%DefeatButton").pressed.connect(_on_defeat_pressed)
+	
+	# Connect Hint Button
+	var hint_btn = _code_editor.get_parent().get_node("BottomRow/HintButton")
+	if hint_btn:
+		hint_btn.hint_requested.connect(_on_hint_pressed)
+
+	_hints_popup = get_node("HintsPopup")
+	_hints_popup.set_anchors_preset(Control.PRESET_CENTER)
+	_hints_popup.close_requested.connect(_on_hints_popup_close_requested)
+	_hints_popup.request_hint_requested.connect(_on_request_hint_requested)
+	_hints_popup.hide()
 
 	_setup_sprites()
 	call_deferred("_apply_zoom")
@@ -122,10 +134,8 @@ func _on_code_editor_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				return
 			KEY_V:
-				get_viewport().set_input_as_handled()
 				if not _submit_btn.disabled:
 					_metrics.record_paste()
-					_trigger_submission(true)
 				return
 	if key.pressed:
 		_inactivity_timer = 0.0  # Phase 2: any keystroke resets idle clock
@@ -144,7 +154,20 @@ func _set_code_font_size(new_size: int) -> void:
 func _on_submit_pressed() -> void:
 	_trigger_submission(false)
 
-func _trigger_submission(is_paste: bool) -> void:
+func _on_hint_pressed() -> void:
+	if _hints_popup.visible:
+		_hints_popup.hide()
+	else:
+		_hints_popup.show()
+
+func _on_hints_popup_close_requested() -> void:
+	_hints_popup.hide()
+
+func _on_request_hint_requested() -> void:
+	_hint_count += 1
+	_trigger_submission(false, true)
+
+func _trigger_submission(is_paste: bool, is_hint_request: bool = false) -> void:
 	_attempt_count += 1
 	var code := _code_editor.text
 	var raw_metrics := _metrics.collect()
@@ -178,6 +201,7 @@ func _trigger_submission(is_paste: bool) -> void:
 			"errorLog":            _error_log.duplicate(),
 			"isFirstSubmission":   _is_baseline,
 		},
+		"isHintRequest": is_hint_request,
 	}
 
 	# Phase 1 baseline consumed — all subsequent submissions are Phase 2+
@@ -186,8 +210,10 @@ func _trigger_submission(is_paste: bool) -> void:
 	_inactivity_timer = 0.0
 	_previous_code = code
 
-	if not is_paste:
+	if not is_paste and not is_hint_request:
 		_set_output_text("Submitting...")
+	elif is_hint_request:
+		_set_output_text("Requesting hint...")
 	_submit_btn.disabled = true
 	ApiClient.post_submission(payload)
 
@@ -250,6 +276,8 @@ func _on_submission_completed(data: Dictionary) -> void:
 			# Show ODIN dialogue popup, then reset the error accumulation cycle.
 			if not dialogue_text.is_empty():
 				await _show_server_dialogue("Odin", dialogue_text, "")
+				_unlocked_hints.append(dialogue_text)
+				_hints_popup.add_hint(dialogue_text)
 			_error_log.clear()  # Intervention delivered — start fresh accumulation
 
 		"Rejection":
