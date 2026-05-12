@@ -35,6 +35,9 @@ var _is_baseline: bool = true           # Phase 1: true until first submission f
 # Comment lines in starter code are wrapped to this width (chars) so they
 # fit in the CodeEdit at default zoom (font size 20) without horizontal scroll.
 const COMMENT_WRAP_WIDTH: int = 52
+const BULK_PASTE_MIN_CHARS: int = 40
+const PASTE_SUBMIT_MAX_SECONDS: float = 2.0
+const PASTE_SUBMIT_MAX_KEYDOWNS: int = 8
 
 func _ready() -> void:
 	if Globals.instance != null and Globals.instance.ui_theme != null:
@@ -136,7 +139,7 @@ func _on_code_editor_input(event: InputEvent) -> void:
 				return
 			KEY_V:
 				if not _submit_btn.disabled:
-					_metrics.record_paste()
+					_metrics.record_paste(DisplayServer.clipboard_get())
 				return
 	if key.pressed:
 		_inactivity_timer = 0.0  # Phase 2: any keystroke resets idle clock
@@ -172,6 +175,7 @@ func _trigger_submission(is_paste: bool, is_hint_request: bool = false) -> void:
 	_attempt_count += 1
 	var code := _code_editor.text
 	var raw_metrics := _metrics.collect()
+	var is_paste_then_submit := _is_bulk_paste_then_submit(raw_metrics, code)
 
 	# Compute client-side time since last submit
 	var now_ms := float(Time.get_ticks_msec())
@@ -194,7 +198,7 @@ func _trigger_submission(is_paste: bool, is_hint_request: bool = false) -> void:
 			"averageDwellTimeMs":  raw_metrics.get("avg_dwell_time_ms",  -1.0),
 			"initialLatencyMs":    raw_metrics.get("initial_latency_ms", -1.0),
 			"totalTimeSeconds":    raw_metrics.get("total_time_seconds",  0.0),
-			"pasteDetected":       raw_metrics.get("paste_detected",     false),
+			"pasteDetected":       is_paste_then_submit,
 			"rawEvents":           raw_metrics.get("raw_events", []),
 			# ── 4-Phase telemetry fields ──
 			"inactivityDuration":  _inactivity_timer,
@@ -217,6 +221,43 @@ func _trigger_submission(is_paste: bool, is_hint_request: bool = false) -> void:
 		_set_output_text("Requesting hint...")
 	_submit_btn.disabled = true
 	ApiClient.post_submission(payload)
+
+func _is_bulk_paste_then_submit(raw_metrics: Dictionary, code: String) -> bool:
+	if not raw_metrics.get("paste_detected", false):
+		return false
+
+	var pasted_chars: int = int(raw_metrics.get("pasted_char_count", 0))
+	var seconds_since_paste: float = float(raw_metrics.get("seconds_since_paste", -1.0))
+	var key_downs_since_paste: int = int(raw_metrics.get("key_downs_since_paste", 0))
+
+	if pasted_chars < BULK_PASTE_MIN_CHARS:
+		return false
+	if seconds_since_paste < 0.0 or seconds_since_paste > PASTE_SUBMIT_MAX_SECONDS:
+		return false
+	if key_downs_since_paste > PASTE_SUBMIT_MAX_KEYDOWNS:
+		return false
+
+	var normalized_code := _normalize_code_for_comparison(code)
+	if normalized_code.is_empty():
+		return false
+
+	var normalized_starter := _normalize_code_for_comparison(_starter_code)
+	var normalized_wrapped_starter := _normalize_code_for_comparison(_wrap_starter_comments(_starter_code))
+	var normalized_previous := _normalize_code_for_comparison(_previous_code)
+
+	# Copying starter text or the student's own earlier work inside this task is not
+	# treated as external-answer insertion.
+	if not normalized_starter.is_empty() and normalized_code == normalized_starter:
+		return false
+	if not normalized_wrapped_starter.is_empty() and normalized_code == normalized_wrapped_starter:
+		return false
+	if not normalized_previous.is_empty() and normalized_code == normalized_previous:
+		return false
+
+	return true
+
+func _normalize_code_for_comparison(code: String) -> String:
+	return code.replace("\r\n", "\n").replace("\r", "\n").strip_edges()
 
 # ---------------------------------------------------------------------------
 # Phase 4: Targeted Intervention — parse response and route dialogue
@@ -285,7 +326,9 @@ func _on_submission_completed(data: Dictionary) -> void:
 			# GamingTheSystem — popup warning, then clear log (not a genuine attempt).
 			if not _starter_code.is_empty():
 				_code_editor.text = _wrap_starter_comments(_starter_code)
-				_code_editor.set_caret_line(_code_editor.get_line_count() - 1)
+			else:
+				_code_editor.text = "" # Fallback to clear
+			_code_editor.set_caret_line(_code_editor.get_line_count() - 1)
 			if not dialogue_text.is_empty():
 				await _show_server_dialogue("Odin", dialogue_text, "")
 			_error_log.clear()
