@@ -57,7 +57,7 @@ func _ready() -> void:
 	_submit_btn.pressed.connect(_on_submit_pressed)
 	
 	# Connect Hint Button
-	var hint_btn = _code_editor.get_parent().get_node("BottomRow/HintButton")
+	var hint_btn = _code_editor.get_parent().get_node("TitleRow/HintButton")
 	if hint_btn:
 		hint_btn.hint_requested.connect(_on_hint_pressed)
 

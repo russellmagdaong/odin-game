@@ -35,7 +35,7 @@ func add_hint(text: String) -> void:
 		
 	var label := Label.new()
 	label.text = text
-	label.autowrap_mode = 2 # AUTOWRAP_WORD
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.custom_minimum_size.x = _hint_text_width()
 	_hints_list.add_child(label)
@@ -48,7 +48,7 @@ func show_no_hints_message() -> void:
 	clear_hints()
 	var label := Label.new()
 	label.text = "No hints available."
-	label.autowrap_mode = 2
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.custom_minimum_size.x = _hint_text_width()
 	_hints_list.add_child(label)
