@@ -30,6 +30,7 @@ corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
+content_margin_left = 0.0
 expand_margin_left = 8.0
 expand_margin_right = 8.0
 

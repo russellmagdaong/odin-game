@@ -12,6 +12,7 @@ const ENEMY_SPRITE_HEIGHT = 200.0
 const CODE_FONT_SIZE_DEFAULT: int = 20
 const CODE_FONT_SIZE_MIN: int = 6
 const CODE_FONT_SIZE_MAX: int = 32
+const BATTLE_TUTORIAL_ID: String = "battle_tutorial"
 
 var _code_font_size: int = CODE_FONT_SIZE_DEFAULT
 
@@ -88,6 +89,7 @@ func _ready() -> void:
 		ApiClient.get_puzzle(_puzzle_id)
 	_post_session_start()
 	_battle_start_ms = float(Time.get_ticks_msec())
+	call_deferred("_maybe_show_battle_tutorial")
 
 func _exit_tree() -> void:
 	if ApiClient.submission_completed.is_connected(_on_submission_completed):
@@ -486,6 +488,26 @@ func _finish_session(_completed: bool) -> void:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+func _maybe_show_battle_tutorial() -> void:
+	if PlayerDataManager.triggered_dialogues.has(BATTLE_TUTORIAL_ID):
+		return
+	PlayerDataManager.mark_dialogue_triggered(BATTLE_TUTORIAL_ID)
+	var lines: Array = [
+		["Odin", "Welcome to your first battle! This is where your programming skills are put to the test."],
+		["Odin", "The Problem Panel in the upper right describes what your code needs to accomplish. Read it carefully before you start writing."],
+		["Odin", "Below that is the Code Editor — type your solution here. Use Ctrl+Scroll or Ctrl+Plus/Minus to resize the text if it feels too small or too large."],
+		["Odin", "If you ever forget a syntax — like how to write a loop or declare a variable — check the wiki in the sidebar on the left. It's your reference guide."],
+		["Odin", "The Output Panel on the lower left shows what happened after you submit. If there's an error, it will point to the line that needs fixing."],
+		["Odin", "Once you're ready, press Submit. Take your time — good thinking beats fast guessing. Good luck."],
+	]
+	var entries: Array[DialogueEntry] = []
+	for line in lines:
+		var e := DialogueEntry.new()
+		e.speaker_name = line[0]
+		e.text = line[1]
+		entries.append(e)
+	await DialogueManager.show(entries)
 
 func _clear_error_highlight() -> void:
 	if _highlighted_error_line >= 0:
