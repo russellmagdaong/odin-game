@@ -496,10 +496,10 @@ func _maybe_show_battle_tutorial() -> void:
 	var lines: Array = [
 		["Odin", "Welcome to your first battle! This is where your programming skills are put to the test."],
 		["Odin", "The Problem Panel in the upper right describes what your code needs to accomplish. Read it carefully before you start writing."],
-		["Odin", "Below that is the Code Editor — type your solution here. Use Ctrl+Scroll or Ctrl+Plus/Minus to resize the text if it feels too small or too large."],
-		["Odin", "If you ever forget a syntax — like how to write a loop or declare a variable — check the wiki in the sidebar on the left. It's your reference guide."],
+		["Odin", "Below that is the Code Editor - type your solution here. Use Ctrl+Scroll or Ctrl+Plus/Minus to resize the text if it feels too small or too large."],
+		["Odin", "If you ever forget a syntax check the wiki in the sidebar on the left. It's your reference guide."],
 		["Odin", "The Output Panel on the lower left shows what happened after you submit. If there's an error, it will point to the line that needs fixing."],
-		["Odin", "Once you're ready, press Submit. Take your time — good thinking beats fast guessing. Good luck."],
+		["Odin", "Once you're ready, press Submit. Take your time - good thinking beats fast guessing. Good luck."],
 	]
 	var entries: Array[DialogueEntry] = []
 	for line in lines:
