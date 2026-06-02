@@ -264,7 +264,7 @@ func _on_submission_completed(data: Dictionary) -> void:
 	# Line number from first compiler diagnostic (if any)
 	var compiler_diags: Array = data.get("compilerDiagnostics", [])
 	var line_no: int = compiler_diags[0].get("line", -1) if not compiler_diags.is_empty() else -1
-	var loc := "  (line %d)" % line_no if line_no > 0 else ""
+	var loc := "  (line %d)" % (line_no - 1) if line_no > 1 else ""
 
 	# ── Correct answer ──
 	if correct:

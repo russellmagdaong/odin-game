@@ -281,7 +281,6 @@ text = "Code Editor"
 
 [node name="HintButton" parent="MarginContainer/ContentSplit/RightVBox/EditorPanel/EditorMargin/EditorVBox/TitleRow" unique_id=325701175 instance=ExtResource("7_mhrs4")]
 layout_mode = 2
-text = "Hint"
 
 [node name="CodeEditor" type="CodeEdit" parent="MarginContainer/ContentSplit/RightVBox/EditorPanel/EditorMargin/EditorVBox" unique_id=200000018]
 unique_name_in_owner = true
@@ -293,6 +292,7 @@ theme_override_fonts/font = ExtResource("8_kholq")
 theme_override_styles/normal = SubResource("StyleBoxFlat_drxpv")
 theme_override_styles/focus = ExtResource("5_i4ha3")
 placeholder_text = "-- Write your code here..."
+gutters_draw_line_numbers = true
 indent_automatic = true
 
 [node name="BottomRow" type="HBoxContainer" parent="MarginContainer/ContentSplit/RightVBox/EditorPanel/EditorMargin/EditorVBox" unique_id=200000043]
