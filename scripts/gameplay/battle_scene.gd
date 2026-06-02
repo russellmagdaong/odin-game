@@ -36,6 +36,7 @@ var _is_baseline: bool = true           # Phase 1: true until first submission f
 var _error_feedback_ms: float = -1.0
 var _first_key_after_error_ms: float = -1.0
 var _battle_start_ms: float = 0.0
+var _highlighted_error_line: int = -1
 
 # Comment lines in starter code are wrapped to this width (chars) so they
 # fit in the CodeEdit at default zoom (font size 20) without horizontal scroll.
@@ -179,6 +180,7 @@ func _on_request_hint_requested() -> void:
 	_trigger_submission(false, true)
 
 func _trigger_submission(is_paste: bool, is_hint_request: bool = false) -> void:
+	_clear_error_highlight()
 	var now_ms := float(Time.get_ticks_msec())
 	var post_err := -1.0
 	if _error_feedback_ms >= 0.0:
@@ -301,6 +303,12 @@ func _on_submission_completed(data: Dictionary) -> void:
 	else:
 		_set_output_text("") # Clear output silently for pastes/gaming
 
+	if line_no > 1:
+		var editor_line := line_no - 2
+		if editor_line >= 0 and editor_line < _code_editor.get_line_count():
+			_code_editor.set_line_background_color(editor_line, Color(0.85, 0.15, 0.15, 0.35))
+			_highlighted_error_line = editor_line
+
 	if intervention_type != "Rejection" and not diag_category.is_empty() and diag_category != "None":
 		_error_feedback_ms = float(Time.get_ticks_msec())
 		_first_key_after_error_ms = -1.0
@@ -353,6 +361,7 @@ func _on_puzzle_fetched(data: Dictionary) -> void:
 		_starter_code = code
 		_code_editor.text = _wrap_starter_comments(code)
 		_code_editor.set_caret_line(_code_editor.get_line_count() - 1)
+		call_deferred("_auto_fit_code")
 
 # Wraps only comment lines (// ...) in starter code that exceed COMMENT_WRAP_WIDTH.
 # Code lines are left exactly as-is to preserve correct indentation and syntax.
@@ -477,6 +486,33 @@ func _finish_session(_completed: bool) -> void:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+func _clear_error_highlight() -> void:
+	if _highlighted_error_line >= 0:
+		_code_editor.set_line_background_color(_highlighted_error_line, Color.TRANSPARENT)
+		_highlighted_error_line = -1
+
+func _auto_fit_code() -> void:
+	var lines := _code_editor.text.split("\n")
+	var longest := ""
+	for line in lines:
+		if line.length() > longest.length():
+			longest = line
+	if longest.is_empty():
+		return
+	var total_gutter := 0
+	for i in range(_code_editor.get_gutter_count()):
+		total_gutter += _code_editor.get_gutter_width(i)
+	var available_width := _code_editor.size.x - total_gutter - 24.0
+	if available_width <= 0:
+		return
+	var font := _code_editor.get_theme_font("font")
+	for font_size in range(CODE_FONT_SIZE_MAX, CODE_FONT_SIZE_MIN - 1, -1):
+		var text_width := font.get_string_size(longest, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+		if text_width <= available_width:
+			_set_code_font_size(font_size)
+			return
+	_set_code_font_size(CODE_FONT_SIZE_MIN)
 
 func _show_server_dialogue(speaker: String, text: String, hint: String) -> void:
 	var entries: Array[DialogueEntry] = []

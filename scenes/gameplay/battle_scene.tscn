@@ -7,7 +7,6 @@
 [ext_resource type="StyleBox" uid="uid://dg3wr76mvxop1" path="res://resources/battle/button.tres" id="5_drxpv"]
 [ext_resource type="StyleBox" uid="uid://da8874cojnrke" path="res://resources/battle/editorfocus.tres" id="5_i4ha3"]
 [ext_resource type="PackedScene" uid="uid://bs4h6sys7lcms" path="res://scenes/ui/hint_button.tscn" id="7_mhrs4"]
-[ext_resource type="FontFile" uid="uid://d0c1d3f552cmr" path="res://resources/fonts/dedicool/Dedicool.ttf" id="8_kholq"]
 [ext_resource type="PackedScene" uid="uid://cnl30icxs0cks" path="res://scenes/ui/hints_popup.tscn" id="11_qaiw1"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_i4ha3"]
@@ -288,7 +287,7 @@ z_index = 2
 layout_mode = 2
 size_flags_vertical = 3
 theme = SubResource("Theme_651df")
-theme_override_fonts/font = ExtResource("8_kholq")
+theme_override_fonts/font = ExtResource("3_x8bid")
 theme_override_styles/normal = SubResource("StyleBoxFlat_drxpv")
 theme_override_styles/focus = ExtResource("5_i4ha3")
 placeholder_text = "-- Write your code here..."
