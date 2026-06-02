@@ -257,6 +257,7 @@ func _on_submission_completed(data: Dictionary) -> void:
 	var npc_dialogue: Dictionary = data.get("npcDialogue", {})
 	var intervention_type: String = data.get("interventionType", "None")
 	var is_mastered: bool        = data.get("isMastered", false)
+	var is_warm_up: bool         = data.get("isWarmUpPhase", false)
 	var mastery_pct: float       = data.get("masteryProbability", 0.0) * 100.0
 	var xp: int                  = data.get("xpAwarded", 0)
 
@@ -269,7 +270,8 @@ func _on_submission_completed(data: Dictionary) -> void:
 	if correct:
 		_error_feedback_ms = -1.0
 		_first_key_after_error_ms = -1.0
-		var out := "Correct!    Mastery: %d%%" % int(mastery_pct)
+		var mastery_label := "Calibrating..." if is_warm_up else "Mastery: %d%%" % int(mastery_pct)
+		var out := "Correct!    %s" % mastery_label
 		if xp > 0:
 			out += "\n+%d XP" % xp
 		_set_output_text(out)
