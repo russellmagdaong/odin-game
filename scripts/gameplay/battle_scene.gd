@@ -270,8 +270,11 @@ func _on_submission_completed(data: Dictionary) -> void:
 	if correct:
 		_error_feedback_ms = -1.0
 		_first_key_after_error_ms = -1.0
-		var mastery_label := "Calibrating..." if is_warm_up else "Mastery: %d%%" % int(mastery_pct)
-		var out := "Correct!    %s" % mastery_label
+		var out: String
+		if is_warm_up:
+			out = "Nice, you got it!\nThe system is still calibrating your mastery."
+		else:
+			out = "Correct!    Mastery: %d%%" % int(mastery_pct)
 		if xp > 0:
 			out += "\n+%d XP" % xp
 		_set_output_text(out)
