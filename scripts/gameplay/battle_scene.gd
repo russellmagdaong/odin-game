@@ -23,6 +23,7 @@ var _skill_type: String = ""
 var _attempt_count: int = 0
 var _hint_count: int = 0
 var _previous_code: String = ""
+var _dungeon_level: int = 0
 
 # Keystroke tracker
 var _metrics: BattleMetrics
@@ -278,7 +279,7 @@ func _on_submission_completed(data: Dictionary) -> void:
 		if is_warm_up:
 			out = "Nice, you got it!\nThe system is still calibrating your mastery."
 		else:
-			out = "Correct!    Mastery: %d%%" % int(mastery_pct)
+			out = "Correct!    Level %d Mastery: %d%%" % [_dungeon_level, int(mastery_pct)]
 		if xp > 0:
 			out += "\n+%d XP" % xp
 		_set_output_text(out)
@@ -421,16 +422,15 @@ func _on_request_failed(tag: String, code: int) -> void:
 # ---------------------------------------------------------------------------
 
 func _post_session_start() -> void:
-	var dungeon_level := 0
 	if SceneManager.current_level != null:
 		var level_name := str(SceneManager.current_level.name)
 		if level_name.length() > 5:
-			dungeon_level = int(level_name[5])
+			_dungeon_level = int(level_name[5])
 
 	ApiClient.post_session_start({
 		"userId":       PlayerDataManager.user_id,
 		"puzzleId":     _puzzle_id,
-		"dungeonLevel": dungeon_level,
+		"dungeonLevel": _dungeon_level,
 	})
 
 func _on_defeat_pressed() -> void:
