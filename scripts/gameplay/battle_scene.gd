@@ -324,7 +324,7 @@ func _on_submission_completed(data: Dictionary) -> void:
 
 	match intervention_type:
 		"ScaffoldingHint":
-			# Show ODIN dialogue popup, then reset the error accumulation cycle.
+			# Automatic behavioral intervention — show dialogue and reset error accumulation.
 			if _should_show_hint(dialogue_text):
 				await _show_server_dialogue("Odin", dialogue_text, "")
 				if _unlocked_hints.is_empty():
@@ -332,6 +332,16 @@ func _on_submission_completed(data: Dictionary) -> void:
 				_unlocked_hints.append(dialogue_text)
 				_hints_popup.add_hint(dialogue_text)
 			_error_log.clear()  # Intervention delivered — start fresh accumulation
+
+		"PuzzleHint":
+			# Player-requested puzzle hint — show dialogue and add to popup.
+			# Does not clear error accumulation; player is actively seeking help.
+			if _should_show_hint(dialogue_text):
+				await _show_server_dialogue("Odin", dialogue_text, "")
+				if _unlocked_hints.is_empty():
+					_hints_popup.clear_hints()
+				_unlocked_hints.append(dialogue_text)
+				_hints_popup.add_hint(dialogue_text)
 
 		"Rejection":
 			# GamingTheSystem — popup warning only. Do not clear or replace the student's code.
