@@ -82,6 +82,9 @@ func _ready() -> void:
 	_is_arena_boss_battle = _is_arena_battle and enemy != null and (
 		enemy.get("is_level_boss") == true or enemy.get("is_final_boss") == true
 	)
+	if _is_arena_battle and SceneManager.arena_run_id.is_empty():
+		SceneManager.arena_run_id = "%s_%d" % [PlayerDataManager.user_id, Time.get_ticks_msec()]
+		GameLogger.warning("BattleScene: generated missing arena_run_id=%s" % SceneManager.arena_run_id)
 
 	_metrics = BattleMetrics.new()
 	_metrics.start()
@@ -274,6 +277,8 @@ func _on_submission_completed(data: Dictionary) -> void:
 	var intervention_type: String = data.get("interventionType", "None")
 	var is_mastered: bool        = data.get("isMastered", false)
 	var is_warm_up: bool         = data.get("isWarmUpPhase", false)
+	var attempt_count: int       = int(data.get("attemptCount", 0))
+	var warm_up_attempts: int    = int(data.get("warmUpAttempts", 3))
 	var mastery_pct: float       = data.get("masteryProbability", 0.0) * 100.0
 	var xp: int                  = data.get("xpAwarded", 0)
 
@@ -288,7 +293,10 @@ func _on_submission_completed(data: Dictionary) -> void:
 		_first_key_after_error_ms = -1.0
 		var out: String
 		if is_warm_up:
-			out = "Nice, you got it!\nThe system is still calibrating your mastery."
+			out = "Nice, you got it!\nThe system is still calibrating your mastery. (%d/%d)" % [
+				attempt_count,
+				warm_up_attempts,
+			]
 		elif _is_arena_battle:
 			out = "Correct!    Arena Level %d Mastery: %d%%" % [_dungeon_level, int(mastery_pct)]
 		else:
