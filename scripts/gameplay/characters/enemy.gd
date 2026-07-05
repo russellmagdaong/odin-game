@@ -30,7 +30,7 @@ var vision_direction: Vector2 = Vector2.DOWN
 var state_machine: StateMachine
 
 func _ready() -> void:
-	if enemy_id != "" and Globals.defeated_enemies.has(enemy_id):
+	if enemy_id != "" and Globals.defeated_enemies.has(enemy_id) and not SceneManager.is_arena_mode:
 		queue_free()
 		return
 

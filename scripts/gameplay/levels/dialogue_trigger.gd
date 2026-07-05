@@ -17,6 +17,8 @@ func _ready() -> void:
 func _on_body_entered(body: Node2D) -> void:
 	if body.name != "Player" or _triggered:
 		return
+	if SceneManager.is_arena_mode:
+		return
 	if SceneManager.is_changing or SceneManager.is_battling or DialogueManager.is_dialogue:
 		return
 	if dialogues.is_empty():

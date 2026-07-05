@@ -24,6 +24,8 @@ var _attempt_count: int = 0
 var _hint_count: int = 0
 var _previous_code: String = ""
 var _dungeon_level: int = 0
+var _is_arena_battle: bool = false
+var _is_arena_boss_battle: bool = false
 
 # Keystroke tracker
 var _metrics: BattleMetrics
@@ -76,6 +78,10 @@ func _ready() -> void:
 	var enemy = SceneManager.battle_enemy
 	_puzzle_id  = str(enemy.get("puzzle_id"))   if enemy != null else ""
 	_skill_type = _skill_name(enemy.get("skill_type") if enemy != null else 0)
+	_is_arena_battle = SceneManager.is_arena_mode
+	_is_arena_boss_battle = _is_arena_battle and enemy != null and (
+		enemy.get("is_level_boss") == true or enemy.get("is_final_boss") == true
+	)
 
 	_metrics = BattleMetrics.new()
 	_metrics.start()
@@ -90,7 +96,8 @@ func _ready() -> void:
 		ApiClient.get_puzzle(_puzzle_id)
 	_post_session_start()
 	_battle_start_ms = float(Time.get_ticks_msec())
-	call_deferred("_maybe_show_battle_tutorial")
+	if not _is_arena_battle:
+		call_deferred("_maybe_show_battle_tutorial")
 
 func _exit_tree() -> void:
 	if ApiClient.submission_completed.is_connected(_on_submission_completed):
@@ -211,6 +218,10 @@ func _trigger_submission(is_paste: bool, is_hint_request: bool = false) -> void:
 		"skillType":      _skill_type,
 		"sourceCode":     code,
 		"hintUsageCount": _hint_count,
+		"gameMode":       "arena" if _is_arena_battle else "story",
+		"arenaRunId":     SceneManager.arena_run_id if _is_arena_battle else "",
+		"arenaLevel":     SceneManager.arena_level_name if _is_arena_battle else -1,
+		"arenaCommit":    _is_arena_boss_battle,
 		"keystrokeData":  {
 			"averageFlightTimeMs": raw_metrics.get("avg_flight_time_ms", -1.0),
 			"averageDwellTimeMs":  raw_metrics.get("avg_dwell_time_ms",  -1.0),
@@ -278,6 +289,8 @@ func _on_submission_completed(data: Dictionary) -> void:
 		var out: String
 		if is_warm_up:
 			out = "Nice, you got it!\nThe system is still calibrating your mastery."
+		elif _is_arena_battle:
+			out = "Correct!    Arena Level %d Mastery: %d%%" % [_dungeon_level, int(mastery_pct)]
 		else:
 			out = "Correct!    Level %d Mastery: %d%%" % [_dungeon_level, int(mastery_pct)]
 		if xp > 0:
@@ -441,6 +454,9 @@ func _post_session_start() -> void:
 		"userId":       PlayerDataManager.user_id,
 		"puzzleId":     _puzzle_id,
 		"dungeonLevel": _dungeon_level,
+		"gameMode":     "arena" if _is_arena_battle else "story",
+		"arenaRunId":   SceneManager.arena_run_id if _is_arena_battle else "",
+		"arenaLevel":   SceneManager.arena_level_name if _is_arena_battle else -1,
 	})
 
 func _on_defeat_pressed() -> void:
@@ -474,6 +490,10 @@ func _finish_session(_completed: bool) -> void:
 			"hintUsageCount": _hint_count,
 			"isSessionEndTelemetry": true,
 			"isHintRequest": false,
+			"gameMode": "arena" if _is_arena_battle else "story",
+			"arenaRunId": SceneManager.arena_run_id if _is_arena_battle else "",
+			"arenaLevel": SceneManager.arena_level_name if _is_arena_battle else -1,
+			"arenaCommit": _is_arena_boss_battle and _completed,
 			"keystrokeData": {
 				"averageFlightTimeMs": -1.0,
 				"averageDwellTimeMs": -1.0,

@@ -32,6 +32,10 @@ func _on_body_entered(body: Node2D) -> void:
 	_can_trigger = false
 	_last_triggered_player = body
 
+	if SceneManager.is_arena_mode:
+		SceneManager.quit_arena_to_menu()
+		return
+
 	var input: CharacterInput = body.get_node_or_null("Input")
 	var dir: Vector2 = input.direction if input != null else Vector2.ZERO
 	var tile_offset: int = 0

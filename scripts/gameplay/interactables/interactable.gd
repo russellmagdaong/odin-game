@@ -12,6 +12,8 @@ func _exit_tree() -> void:
 		_triggered = false
 
 func _process(_delta: float) -> void:
+	if SceneManager.is_arena_mode:
+		return
 	if one_shot and _triggered:
 		return
 	if SceneManager.is_changing or SceneManager.is_battling or DialogueManager.is_dialogue:

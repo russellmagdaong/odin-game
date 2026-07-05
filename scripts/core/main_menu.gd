@@ -1,10 +1,12 @@
 extends Control
 
 signal game_start_requested(character: String)
+signal arena_requested
 
 var _welcome_label: Label
 var _continue_button: Button
 var _new_game_button: Button
+var _arena_button: Button
 
 func _ready() -> void:
 	if Globals.instance and Globals.instance.ui_theme:
@@ -13,11 +15,13 @@ func _ready() -> void:
 	_welcome_label  = get_node("%WelcomeLabel")
 	_continue_button = get_node("%ContinueButton")
 	_new_game_button = get_node("%NewGameButton")
+	_arena_button = get_node("%ArenaModeButton")
 
 	_refresh_ui()
 
 	_continue_button.pressed.connect(_on_continue_pressed)
 	_new_game_button.pressed.connect(_on_new_game_pressed)
+	_arena_button.pressed.connect(_on_arena_pressed)
 	get_node("%SettingsButton").pressed.connect(_on_settings_pressed)
 
 	# React if an admin reset arrives while this menu is visible
@@ -28,6 +32,7 @@ func _refresh_ui() -> void:
 	_welcome_label.text = "Welcome!" if player_name.is_empty() else "Welcome back, %s!" % player_name
 	_continue_button.visible = PlayerDataManager.has_played
 	_new_game_button.visible = not PlayerDataManager.has_played
+	_arena_button.visible = PlayerDataManager.has_played
 
 func _on_progress_reset() -> void:
 	_refresh_ui()
@@ -41,6 +46,9 @@ func _on_new_game_pressed() -> void:
 	add_child(select)
 	select.character_selected.connect(_on_character_selected)
 	select.cancelled.connect(select.queue_free)
+
+func _on_arena_pressed() -> void:
+	arena_requested.emit()
 
 func _on_settings_pressed() -> void:
 	var pause_scene = load("res://scenes/ui/pause_menu.tscn")

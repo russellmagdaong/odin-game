@@ -73,10 +73,10 @@ func _process(_delta: float) -> void:
 		enemy.state_machine.change_state("Alert")
 
 func _trigger_final_boss_battle(enemy: Enemy) -> void:
-	if Globals.final_boss_defeated:
+	if Globals.final_boss_defeated and not SceneManager.is_arena_mode:
 		if enemy.post_defeat_dialogue.size() > 0:
 			await DialogueManager.show(enemy.post_defeat_dialogue)
 		return
-	if enemy.battle_dialogue.size() > 0:
+	if enemy.battle_dialogue.size() > 0 and not SceneManager.is_arena_mode:
 		await DialogueManager.show(enemy.battle_dialogue)
 	SceneManager.start_battle(enemy)
