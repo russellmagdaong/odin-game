@@ -304,7 +304,7 @@ func _on_submission_completed(data: Dictionary) -> void:
 		if xp > 0:
 			out += "\n+%d XP" % xp
 		_set_output_text(out)
-		if is_mastered:
+		if is_mastered and not _is_arena_battle:
 			await _show_server_dialogue("Odin", "You've mastered this skill. Well done.", "")
 		await get_tree().create_timer(3.0).timeout
 		_finish_session(true)
