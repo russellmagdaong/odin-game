@@ -8,6 +8,10 @@ var battle_enemy: Node
 var current_level: Node2D
 var all_levels: Array[Node2D] = []
 var fade_rect: ColorRect
+var is_arena_mode: bool = false
+var arena_level_name: int = -1
+var arena_run_id: String = ""
+var arena_defeated_enemies: Dictionary = {}
 
 func _ready() -> void:
 	GameLogger.info("Loading scene manager ...")
@@ -50,8 +54,6 @@ func _try_dev_boot() -> void:
 
 func set_enemy_approaching(value: bool) -> void:
 	is_enemy_approaching = value
-	if value:
-		AudioManager.play_music("battle")
 
 func change_level(level_name: int = Enums.LevelName.Level0, trigger: int = 0, tile_offset: int = 0, spawn: bool = false) -> void:
 	if is_changing:
@@ -74,10 +76,11 @@ func change_level(level_name: int = Enums.LevelName.Level0, trigger: int = 0, ti
 	await fade_in()
 	is_changing = false
 	var pos = player.global_position if player != null else Vector2.ZERO
-	PlayerDataManager.save_progress(Enums.LevelName.keys()[level_name], pos)
+	if not is_arena_mode:
+		PlayerDataManager.save_progress(Enums.LevelName.keys()[level_name], pos)
 
 	var spawn_dialogue = current_level.get("spawn_dialogue")
-	if spawn_dialogue != null and (spawn_dialogue as Array).size() > 0:
+	if not is_arena_mode and spawn_dialogue != null and (spawn_dialogue as Array).size() > 0:
 		var intro_id := "spawn_" + str(current_level.name)
 		if not PlayerDataManager.triggered_dialogues.has(intro_id):
 			PlayerDataManager.mark_dialogue_triggered(intro_id)
@@ -96,20 +99,25 @@ func get_level(level_name: int) -> void:
 	if current_level != null:
 		if player != null and player.get_parent() != viewport:
 			player.reparent(viewport)
+		var should_free_removed_level := is_arena_mode and not all_levels.has(current_level)
 		viewport.remove_child(current_level)
+		if should_free_removed_level:
+			current_level.queue_free()
 
 	var level_key: String = Enums.LevelName.keys()[level_name]
 	current_level = null
-	for level in all_levels:
-		if level.name == level_key:
-			current_level = level
-			break
+	if not is_arena_mode:
+		for level in all_levels:
+			if level.name == level_key:
+				current_level = level
+				break
 
 	if current_level == null:
 		var scene: PackedScene = load("res://scenes/levels/%s.tscn" % level_key.to_lower())
 		current_level = scene.instantiate()
 		current_level.name = level_key
-		all_levels.append(current_level)
+		if not is_arena_mode:
+			all_levels.append(current_level)
 
 	viewport.add_child(current_level)
 	viewport.move_child(current_level, 0)
@@ -136,7 +144,7 @@ func spawn_player() -> void:
 	var player_scene: PackedScene = load("res://scenes/characters/%s.tscn" % Globals.selected_character)
 	var player: Node2D = player_scene.instantiate()
 	GameManager.add_player(player)
-	if PlayerDataManager.last_position != Vector2.ZERO:
+	if not is_arena_mode and PlayerDataManager.last_position != Vector2.ZERO:
 		player.global_position = PlayerDataManager.last_position
 	else:
 		player.global_position = spawn_points[0].global_position
@@ -175,6 +183,10 @@ func clear_game() -> void:
 	is_battling = false
 	is_enemy_approaching = false
 	battle_enemy = null
+	is_arena_mode = false
+	arena_level_name = -1
+	arena_run_id = ""
+	arena_defeated_enemies.clear()
 
 	if GameManager.instance != null:
 		var canvas := GameManager.instance.get_node_or_null("BattleCanvas")
@@ -183,6 +195,8 @@ func clear_game() -> void:
 
 	DialogueManager.cancel()
 
+	if current_level != null and is_instance_valid(current_level) and not all_levels.has(current_level):
+		current_level.queue_free()
 	for level in all_levels:
 		if is_instance_valid(level):
 			level.queue_free()
@@ -216,6 +230,24 @@ func start_battle(enemy: Node) -> void:
 
 	await fade_in()
 
+func start_arena(level_name: int) -> void:
+	clear_game()
+	is_arena_mode = true
+	arena_level_name = level_name
+	arena_run_id = "%s_%d" % [PlayerDataManager.user_id, Time.get_ticks_msec()]
+	arena_defeated_enemies.clear()
+	change_level(level_name, 0, 0, true)
+
+func quit_arena_to_menu() -> void:
+	if not is_arena_mode:
+		return
+	clear_game()
+	var player_node = GameManager.get_player()
+	if player_node != null:
+		player_node.queue_free()
+	GameManager.set_player(null)
+	GameManager.show_arena_menu()
+
 func end_battle() -> void:
 	if not is_battling:
 		return
@@ -235,13 +267,15 @@ func end_battle() -> void:
 		var enemy_id: String = str(enemy.get("enemy_id"))
 		is_final = enemy.get("is_final_boss") == true
 		is_level_boss = enemy.get("is_level_boss") == true
-		if not enemy_id.is_empty() and not is_final:
+		if is_arena_mode and not enemy_id.is_empty():
+			arena_defeated_enemies[enemy_id] = true
+		elif not enemy_id.is_empty() and not is_final:
 			Globals.defeated_enemies[enemy_id] = true
 			PlayerDataManager.mark_enemy_defeated(enemy_id)
-		if is_final:
+		if is_final and not is_arena_mode:
 			Globals.final_boss_defeated = true
 
-	if is_level_boss and not is_final:
+	if is_level_boss and not is_final and not is_arena_mode:
 		_award_level_achievement()
 
 	if not is_final and enemy != null:
@@ -250,14 +284,32 @@ func end_battle() -> void:
 	is_battling = false
 
 	await fade_in()
+
+	if is_arena_mode and (is_level_boss or is_final):
+		await _complete_arena_run()
+		return
+
 	AudioManager.play_music_for_level(str(current_level.name) if current_level != null else "")
 
 	var player_node = GameManager.get_player()
-	if player_node != null and current_level != null:
+	if player_node != null and current_level != null and not is_arena_mode:
 		PlayerDataManager.save_progress(str(current_level.name), player_node.global_position)
 
-	if is_final and is_instance_valid(enemy):
+	if is_final and is_instance_valid(enemy) and not is_arena_mode:
 		await _show_final_boss_ending(enemy, is_level_boss)
+
+func _complete_arena_run() -> void:
+	is_arena_mode = false
+	arena_level_name = -1
+	arena_run_id = ""
+	arena_defeated_enemies.clear()
+	AudioManager.play_music("mainmenu")
+	clear_game()
+	var player_node = GameManager.get_player()
+	if player_node != null:
+		player_node.queue_free()
+	GameManager.set_player(null)
+	GameManager.show_arena_menu()
 
 func _award_level_achievement() -> void:
 	if current_level == null:

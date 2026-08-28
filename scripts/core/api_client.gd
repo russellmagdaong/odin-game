@@ -47,10 +47,26 @@ func post_session_start(payload: Dictionary) -> void:
 	_enqueue(HTTPClient.METHOD_POST, "/api/session", payload, "session_start")
 
 func patch_session_end(session_id: String) -> void:
-	_enqueue(HTTPClient.METHOD_PATCH, "/api/session/" + session_id + "/end", {}, "session_end")
+	_enqueue(HTTPClient.METHOD_PATCH, "/api/session/" + session_id + "/end", {}, "session_patch_end")
+
+func post_session_end_telemetry(payload: Dictionary) -> void:
+	_enqueue(HTTPClient.METHOD_POST, "/api/submission", payload, "session_end_telemetry")
 
 func get_puzzle(puzzle_id: String) -> void:
 	_enqueue(HTTPClient.METHOD_GET, "/api/puzzle/" + puzzle_id, {}, "puzzle_fetch")
+
+func get_game_state() -> void:
+	var uid := PlayerDataManager.user_id
+	if uid.is_empty() or uid == "local_dev":
+		return
+	_enqueue(HTTPClient.METHOD_GET, "/api/player/" + uid + "/gamestate", {}, "game_state_load")
+
+func put_game_state(gs_data: Dictionary) -> void:
+	var uid := PlayerDataManager.user_id
+	if uid.is_empty() or uid == "local_dev":
+		return
+	_enqueue(HTTPClient.METHOD_PUT, "/api/player/" + uid + "/gamestate",
+			{"data": JSON.stringify(gs_data)}, "game_state_save")
 
 # ---------------------------------------------------------------------------
 # Internal queue
@@ -91,6 +107,13 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 		_flush()
 		return
 
+	if response_code < 200 or response_code >= 300:
+		var err_text := body.get_string_from_utf8()
+		GameLogger.error("ApiClient: HTTP %d for tag=%s — body: %s" % [response_code, tag, err_text])
+		request_failed.emit(tag, response_code)
+		_flush()
+		return
+
 	var text := body.get_string_from_utf8()
 	var json := JSON.new()
 	if json.parse(text) != OK:
@@ -105,6 +128,12 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 	match tag:
 		"submission":
 			submission_completed.emit(data)
+			if OS.has_feature("web"):
+				var achievements: Array = data.get("newAchievements", [])
+				if achievements is Array and not achievements.is_empty():
+					JavaScriptBridge.eval(
+						"window.parent.postMessage({type:'odin_achievements_unlocked',achievements:%s},'*');" % JSON.stringify(achievements)
+					)
 		"session_start":
 			session_created.emit(data)
 			if OS.has_feature("web"):
@@ -115,6 +144,38 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 					)
 		"puzzle_fetch":
 			puzzle_fetched.emit(data)
+		"session_end_telemetry":
+			pass
+		"game_state_load":
+			var raw := str(data.get("gameState", "{}"))
+			var json2 := JSON.new()
+			if json2.parse(raw) == OK and json2.data is Dictionary:
+				var gs: Dictionary = json2.data
+				# Empty state means an admin reset occurred — wipe local save and signal the menu
+				if gs.is_empty():
+					PlayerDataManager.reset_to_defaults()
+				else:
+					var achiev: Array[String] = []
+					for a in gs.get("achievements", []):
+						achiev.append(str(a))
+					var dialogues: Array[String] = []
+					for d in gs.get("triggered_dialogues", []):
+						dialogues.append(str(d))
+					PlayerDataManager.set_from_server(
+						true,
+						gs.get("player_name", PlayerDataManager.player_name),
+						gs.get("selected_character", PlayerDataManager.selected_character),
+						achiev,
+						gs.get("last_level", PlayerDataManager.last_level_name),
+						Vector2(gs.get("last_position_x", 0.0), gs.get("last_position_y", 0.0)),
+						dialogues
+					)
+					PlayerDataManager.defeated_enemies.clear()
+					Globals.defeated_enemies.clear()
+					for e in gs.get("defeated_enemies", []):
+						PlayerDataManager.defeated_enemies.append(str(e))
+						Globals.defeated_enemies[str(e)] = true
+					PlayerDataManager.apply_audio_settings(gs)
 
 	_flush()
 

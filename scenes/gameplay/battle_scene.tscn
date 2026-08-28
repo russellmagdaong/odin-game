@@ -6,8 +6,9 @@
 [ext_resource type="SystemFont" uid="uid://drfu43dc5nlj4" path="res://resources/ui/consolas_font.tres" id="3_x8bid"]
 [ext_resource type="StyleBox" uid="uid://dg3wr76mvxop1" path="res://resources/battle/button.tres" id="5_drxpv"]
 [ext_resource type="StyleBox" uid="uid://da8874cojnrke" path="res://resources/battle/editorfocus.tres" id="5_i4ha3"]
-[ext_resource type="StyleBox" uid="uid://cuto6w216kxek" path="res://resources/battle/buttonpressed.tres" id="6_kr4hl"]
-[ext_resource type="StyleBox" uid="uid://dlu70om4umbsg" path="res://resources/battle/buttonhover.tres" id="7_i4ha3"]
+[ext_resource type="FontFile" uid="uid://brf68agyfw5h0" path="res://resources/fonts/JetBrainsMono-2.304/fonts/ttf/JetBrainsMono-Regular.ttf" id="6_kholq"]
+[ext_resource type="PackedScene" uid="uid://bs4h6sys7lcms" path="res://scenes/ui/hint_button.tscn" id="7_mhrs4"]
+[ext_resource type="PackedScene" uid="uid://cnl30icxs0cks" path="res://scenes/ui/hints_popup.tscn" id="11_qaiw1"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_i4ha3"]
 
@@ -29,8 +30,51 @@ corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
+content_margin_left = 0.0
 expand_margin_left = 8.0
 expand_margin_right = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mhrs4"]
+content_margin_top = 10.0
+bg_color = Color(0.22745098, 0.24705882, 0.24705882, 0.39607844)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0, 0.48959473, 0.9081231, 0.20784314)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+expand_margin_left = 4.0
+expand_margin_right = 4.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qaiw1"]
+content_margin_top = 10.0
+bg_color = Color(0, 0, 0, 0.74509805)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_color = Color(0.081, 0.576, 1.038, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+expand_margin_left = 4.0
+expand_margin_right = 4.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_smqqk"]
+content_margin_top = 10.0
+bg_color = Color(0.21176471, 0.22745098, 0.22745098, 0.63529414)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.081, 0.576, 1.038, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+expand_margin_left = 4.0
+expand_margin_right = 4.0
 
 [node name="BattleScene" type="Control" unique_id=1730312365]
 layout_mode = 3
@@ -157,7 +201,7 @@ theme_override_constants/separation = 0
 [node name="OutputTitle" type="Label" parent="MarginContainer/ContentSplit/LeftVBox/OutputPanel/OutputMargin/OutputVBox" unique_id=200000022]
 layout_mode = 2
 theme_override_constants/paragraph_spacing = -24
-text = "ODIN:
+text = "OUTPUT:
 "
 
 [node name="OutputScroll" type="ScrollContainer" parent="MarginContainer/ContentSplit/LeftVBox/OutputPanel/OutputMargin/OutputVBox" unique_id=200000023]
@@ -236,15 +280,8 @@ size_flags_horizontal = 3
 theme_override_styles/normal = SubResource("StyleBoxEmpty_kholq")
 text = "Code Editor"
 
-[node name="SubmitButton" type="Button" parent="MarginContainer/ContentSplit/RightVBox/EditorPanel/EditorMargin/EditorVBox/TitleRow" unique_id=200000026]
-unique_name_in_owner = true
+[node name="HintButton" parent="MarginContainer/ContentSplit/RightVBox/EditorPanel/EditorMargin/EditorVBox/TitleRow" unique_id=325701175 instance=ExtResource("7_mhrs4")]
 layout_mode = 2
-theme = ExtResource("1_p51gn")
-theme_override_styles/normal = ExtResource("5_drxpv")
-theme_override_styles/pressed = ExtResource("6_kr4hl")
-theme_override_styles/hover = ExtResource("7_i4ha3")
-theme_override_styles/disabled = ExtResource("5_drxpv")
-text = "SUBMIT"
 
 [node name="CodeEditor" type="CodeEdit" parent="MarginContainer/ContentSplit/RightVBox/EditorPanel/EditorMargin/EditorVBox" unique_id=200000018]
 unique_name_in_owner = true
@@ -252,21 +289,33 @@ z_index = 2
 layout_mode = 2
 size_flags_vertical = 3
 theme = SubResource("Theme_651df")
-theme_override_fonts/font = ExtResource("3_x8bid")
+theme_override_fonts/font = ExtResource("6_kholq")
 theme_override_styles/normal = SubResource("StyleBoxFlat_drxpv")
 theme_override_styles/focus = ExtResource("5_i4ha3")
 placeholder_text = "-- Write your code here..."
+gutters_draw_line_numbers = true
 indent_automatic = true
 
 [node name="BottomRow" type="HBoxContainer" parent="MarginContainer/ContentSplit/RightVBox/EditorPanel/EditorMargin/EditorVBox" unique_id=200000043]
 layout_mode = 2
 alignment = 2
 
-[node name="DefeatButton" type="Button" parent="MarginContainer/ContentSplit/RightVBox/EditorPanel/EditorMargin/EditorVBox/BottomRow" unique_id=1146315180]
+[node name="SubmitButton" type="Button" parent="MarginContainer/ContentSplit/RightVBox/EditorPanel/EditorMargin/EditorVBox/BottomRow" unique_id=200000026]
 unique_name_in_owner = true
-visible = false
 layout_mode = 2
-theme_override_styles/normal = ExtResource("5_drxpv")
-theme_override_styles/pressed = ExtResource("6_kr4hl")
-theme_override_styles/hover = ExtResource("7_i4ha3")
-text = "DEBUG"
+theme = ExtResource("1_p51gn")
+theme_override_styles/normal = SubResource("StyleBoxFlat_mhrs4")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_qaiw1")
+theme_override_styles/hover = SubResource("StyleBoxFlat_smqqk")
+theme_override_styles/disabled = ExtResource("5_drxpv")
+text = "Submit"
+
+[node name="HintsPopup" parent="." unique_id=783192178 instance=ExtResource("11_qaiw1")]
+visible = false
+custom_minimum_size = Vector2(600, 400)
+layout_mode = 1
+offset_left = -300.0
+offset_top = -200.0
+offset_right = 300.0
+offset_bottom = 200.0
+popup_size = Vector2(600, 400)

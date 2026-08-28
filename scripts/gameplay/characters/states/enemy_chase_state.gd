@@ -63,6 +63,6 @@ func _process(delta: float) -> void:
 func _trigger_battle(enemy: Enemy) -> void:
 	enemy_input.is_chasing = false
 	enemy_input.idle.emit()
-	if enemy.battle_dialogue.size() > 0:
+	if enemy.battle_dialogue.size() > 0 and not SceneManager.is_arena_mode:
 		await DialogueManager.show(enemy.battle_dialogue)
 	SceneManager.start_battle(enemy)

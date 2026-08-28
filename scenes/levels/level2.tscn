@@ -146,7 +146,7 @@ battle_dialogue = Array[ExtResource("7_dj4wq")]([SubResource("Resource_oyk6k")])
 [node name="Enemy4" parent="Enemies" unique_id=879925758 instance=ExtResource("6_ok6xr")]
 position = Vector2(560, 160)
 enemy_id = "24"
-puzzle_id = "a0000023-0000-0000-0000-000000000000"
+puzzle_id = "a0000024-0000-0000-0000-000000000000"
 skill_type = 2
 battle_dialogue = Array[ExtResource("7_dj4wq")]([SubResource("Resource_gycjm")])
 
@@ -154,7 +154,7 @@ battle_dialogue = Array[ExtResource("7_dj4wq")]([SubResource("Resource_gycjm")])
 position = Vector2(672, 128)
 enemy_id = "25"
 initial_facing = 2
-puzzle_id = "a0000024-0000-0000-0000-000000000000"
+puzzle_id = "a0000025-0000-0000-0000-000000000000"
 skill_type = 2
 battle_dialogue = Array[ExtResource("7_dj4wq")]([SubResource("Resource_8i1lk")])
 defeat_dialogue = Array[ExtResource("7_dj4wq")]([SubResource("Resource_f3b2k")])

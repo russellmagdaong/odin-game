@@ -3,6 +3,8 @@ extends Node
 # Persists player data to user://player_data.json (IndexedDB on web).
 # When your server is ready, replace load_data/write_to_file with HTTP calls.
 
+signal progress_reset
+
 const SAVE_PATH: String = "user://player_data.json"
 
 const ACHIEVEMENTS: Array = [
@@ -83,6 +85,11 @@ func load_data() -> void:
 		defeated_enemies.append(str(e))
 		Globals.defeated_enemies[str(e)] = true
 
+	apply_audio_settings(data)
+
+	# Async: fetch from server — set_from_server() will override local state when it arrives
+	ApiClient.get_game_state()
+
 func save_character(character: String) -> void:
 	selected_character = character
 	has_played = true
@@ -108,6 +115,23 @@ func unlock_achievement(id: String) -> void:
 		achievements.append(id)
 		_write_to_file()
 
+func reset_to_defaults() -> void:
+	has_played = false
+	player_name = ""
+	selected_character = "playerm"
+	achievements = []
+	last_level_name = ""
+	last_position = Vector2.ZERO
+	triggered_dialogues = []
+	defeated_enemies = []
+	Globals.triggered_dialogues.clear()
+	Globals.defeated_enemies.clear()
+	# Delete local file so next boot also starts fresh
+	var dir := DirAccess.open("user://")
+	if dir:
+		dir.remove("player_data.json")
+	progress_reset.emit()
+
 func set_from_server(
 		p_has_played: bool,
 		p_player_name: String,
@@ -127,7 +151,17 @@ func set_from_server(
 	for t in triggered_dialogues:
 		Globals.triggered_dialogues[t] = true
 
+func apply_audio_settings(data: Dictionary) -> void:
+	var music_bus := AudioServer.get_bus_index("Music")
+	var sfx_bus   := AudioServer.get_bus_index("SFX")
+	if music_bus >= 0 and data.has("music_volume"):
+		AudioServer.set_bus_volume_db(music_bus, linear_to_db(float(data["music_volume"])))
+	if sfx_bus >= 0 and data.has("sfx_volume"):
+		AudioServer.set_bus_volume_db(sfx_bus, linear_to_db(float(data["sfx_volume"])))
+
 func _write_to_file() -> void:
+	var music_bus := AudioServer.get_bus_index("Music")
+	var sfx_bus   := AudioServer.get_bus_index("SFX")
 	var data := {
 		"selected_character":  selected_character,
 		"player_name":         player_name,
@@ -137,7 +171,11 @@ func _write_to_file() -> void:
 		"last_position_y":     last_position.y,
 		"triggered_dialogues": triggered_dialogues.duplicate(),
 		"defeated_enemies":    defeated_enemies.duplicate(),
+		"music_volume": db_to_linear(AudioServer.get_bus_volume_db(music_bus)) if music_bus >= 0 else 0.5,
+		"sfx_volume":   db_to_linear(AudioServer.get_bus_volume_db(sfx_bus))   if sfx_bus   >= 0 else 0.5,
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.ModeFlags.WRITE)
 	if file != null:
 		file.store_string(JSON.stringify(data))
+	# Mirror to server for cross-device sync
+	ApiClient.put_game_state(data)

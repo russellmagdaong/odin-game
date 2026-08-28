@@ -53,6 +53,10 @@ func _process(_delta: float) -> void:
 		else:
 			dir_to_boss = Vector2.DOWN if diff.y > 0 else Vector2.UP
 
+		var player_movement: CharacterMovement = player.get_node_or_null("Movement")
+		if player_movement != null and player_movement.is_moving():
+			return
+
 		var player_char_input: CharacterInput = player.get_node_or_null("Input")
 		var player_dir: Vector2 = player_char_input.direction if player_char_input != null else Vector2.ZERO
 
@@ -65,13 +69,14 @@ func _process(_delta: float) -> void:
 
 	_vision_ray.force_raycast_update()
 	if _vision_ray.is_colliding() and _vision_ray.get_collider() is Player:
+		AudioManager.play_music("battle")
 		enemy.state_machine.change_state("Alert")
 
 func _trigger_final_boss_battle(enemy: Enemy) -> void:
-	if Globals.final_boss_defeated:
+	if Globals.final_boss_defeated and not SceneManager.is_arena_mode:
 		if enemy.post_defeat_dialogue.size() > 0:
 			await DialogueManager.show(enemy.post_defeat_dialogue)
 		return
-	if enemy.battle_dialogue.size() > 0:
+	if enemy.battle_dialogue.size() > 0 and not SceneManager.is_arena_mode:
 		await DialogueManager.show(enemy.battle_dialogue)
 	SceneManager.start_battle(enemy)

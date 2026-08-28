@@ -137,7 +137,15 @@ RUN
   Hold Shift
 
 ADVANCE DIALOGUE
-  Enter"
+  Enter
+
+CODE EDITOR ZOOM
+  Ctrl + scroll wheel
+  Ctrl + -/=
+
+CODE EDITOR ZOOM (reset to default)
+  Ctrl + 0
+"
 autowrap_mode = 2
 
 [node name="Achievements" type="ScrollContainer" parent="Window/MarginContainer/VBoxContainer/Tabs" unique_id=2011190608]

@@ -12,6 +12,8 @@ func _exit_tree() -> void:
 		_triggered = false
 
 func _process(_delta: float) -> void:
+	if SceneManager.is_arena_mode:
+		return
 	if one_shot and _triggered:
 		return
 	if SceneManager.is_changing or SceneManager.is_battling or DialogueManager.is_dialogue:
@@ -21,6 +23,10 @@ func _process(_delta: float) -> void:
 
 	var player: Node = GameManager.get_player()
 	if player == null:
+		return
+
+	var movement: CharacterMovement = player.get_node_or_null("Movement")
+	if movement != null and movement.is_moving():
 		return
 
 	var input: CharacterInput = player.get_node_or_null("Input")

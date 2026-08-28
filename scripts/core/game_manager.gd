@@ -15,12 +15,14 @@ var is_dev_boot: bool = false
 var dev_boot_level: int = Enums.LevelName.Level0
 var _pause_menu: Node
 var _settings_layer: CanvasLayer
+var _js_save_cb: JavaScriptObject
 
 func _ready() -> void:
 	if GameViewPort == null:
 		return
 	GameManager.instance = self
 	GameLogger.info("Loading game manager ...")
+	_setup_js_save_listener()
 
 	if GameManager.is_dev_boot:
 		GameManager.is_dev_boot = false
@@ -55,13 +57,30 @@ func show_main_menu() -> void:
 	var menu: Node = load("res://scenes/core/main_menu.tscn").instantiate()
 	canvas.add_child(menu)
 	menu.game_start_requested.connect(_on_game_start_requested)
+	menu.arena_requested.connect(show_arena_menu)
+
+func show_arena_menu() -> void:
+	if _settings_layer != null:
+		_settings_layer.visible = false
+	AudioManager.play_music("mainmenu")
+
+	var target = _target()
+	_clear_main_menu_layer()
+
+	var canvas: CanvasLayer = CanvasLayer.new()
+	canvas.layer = 10
+	canvas.name = "MainMenuLayer"
+	target.add_child(canvas)
+
+	var menu: Node = load("res://scenes/core/arena_menu.tscn").instantiate()
+	canvas.add_child(menu)
+	menu.arena_level_requested.connect(_on_arena_level_requested)
+	menu.back_requested.connect(_on_arena_back_requested)
 
 func _on_game_start_requested(character: String) -> void:
 	if _settings_layer != null:
 		_settings_layer.visible = true
-	var main_menu_layer: Node = _target().get_node_or_null("MainMenuLayer")
-	if main_menu_layer != null:
-		main_menu_layer.queue_free()
+	_clear_main_menu_layer()
 
 	Globals.selected_character = character
 	if OS.has_feature("web"):
@@ -75,6 +94,21 @@ func _on_game_start_requested(character: String) -> void:
 			target_level = saved_index
 
 	SceneManager.change_level(target_level, 0, 0, true)
+
+func _on_arena_level_requested(level_name: int) -> void:
+	if _settings_layer != null:
+		_settings_layer.visible = true
+	_clear_main_menu_layer()
+
+	Globals.selected_character = PlayerDataManager.selected_character
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("localStorage.setItem('odin_character','%s');" % Globals.selected_character)
+
+	SceneManager.start_arena(level_name)
+
+func _on_arena_back_requested() -> void:
+	_clear_main_menu_layer()
+	show_main_menu()
 
 func open_pause_menu() -> void:
 	if _pause_menu != null:
@@ -102,7 +136,7 @@ func close_pause_menu() -> void:
 func return_to_main_menu() -> void:
 	close_pause_menu()
 	var current_player = get_player()
-	if current_player != null and SceneManager.current_level != null:
+	if current_player != null and SceneManager.current_level != null and not SceneManager.is_arena_mode:
 		PlayerDataManager.save_progress(SceneManager.current_level.name, current_player.global_position)
 	
 	SceneManager.clear_game()
@@ -153,3 +187,29 @@ func _create_settings_button() -> void:
 
 func _target():
 	return GameManager.instance if GameManager.instance != null else self
+
+func _clear_main_menu_layer() -> void:
+	var target = _target()
+	var main_menu_layer: Node = target.get_node_or_null("MainMenuLayer")
+	if main_menu_layer == null:
+		return
+	target.remove_child(main_menu_layer)
+	main_menu_layer.queue_free()
+
+func _setup_js_save_listener() -> void:
+	if not OS.has_feature("web"):
+		return
+	_js_save_cb = JavaScriptBridge.create_callback(_on_js_save_requested)
+	JavaScriptBridge.get_interface("window").odinSaveCb = _js_save_cb
+	JavaScriptBridge.eval("""
+		window.addEventListener('message', function(e) {
+			if (e.data && e.data.type === 'odin_save_request') {
+				window.odinSaveCb();
+			}
+		});
+	""")
+
+func _on_js_save_requested(_args: Array) -> void:
+	var current_player = get_player()
+	if current_player != null and SceneManager.current_level != null:
+		PlayerDataManager.save_progress(str(SceneManager.current_level.name), current_player.global_position)
