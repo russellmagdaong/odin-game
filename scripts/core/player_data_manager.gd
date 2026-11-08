@@ -4,6 +4,7 @@ extends Node
 # When your server is ready, replace load_data/write_to_file with HTTP calls.
 
 signal progress_reset
+signal progress_loaded
 
 const SAVE_PATH: String = "user://player_data.json"
 
@@ -49,7 +50,10 @@ var defeated_enemies: Array[String] = []
 # Reads local JSON; swap for an HTTP call when server is ready.
 func load_data() -> void:
 	if not FileAccess.file_exists(SAVE_PATH):
+		# New device: no local save, but the account may have progress on the server.
+		# Fetch it so Continue/New Game reflects the real state.
 		has_played = false
+		ApiClient.get_game_state()
 		return
 
 	var file := FileAccess.open(SAVE_PATH, FileAccess.ModeFlags.READ)
@@ -150,6 +154,7 @@ func set_from_server(
 	Globals.triggered_dialogues.clear()
 	for t in triggered_dialogues:
 		Globals.triggered_dialogues[t] = true
+	progress_loaded.emit()
 
 func apply_audio_settings(data: Dictionary) -> void:
 	var music_bus := AudioServer.get_bus_index("Music")

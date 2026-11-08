@@ -26,6 +26,8 @@ func _ready() -> void:
 
 	# React if an admin reset arrives while this menu is visible
 	PlayerDataManager.progress_reset.connect(_on_progress_reset)
+	# React when server-side progress loads (new device with existing account)
+	PlayerDataManager.progress_loaded.connect(_refresh_ui)
 
 func _refresh_ui() -> void:
 	var player_name: String = PlayerDataManager.player_name
